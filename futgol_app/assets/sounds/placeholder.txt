@@ -1,0 +1,2 @@
+Bu klasör oyun içi ses asset'lerini (wav/mp3) barındırır.
+Kullanıcı daha sonra gerçek ses dosyalarını correct.wav, wrong.wav vb. isimlerle buraya yükleyecektir.

@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ortak Bağ Bulucu - Futbol Bilgi Oyunu</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+    }
+    .accent-font {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    /* Tam ekran dikey kaydırmayı engelleme */
+    html, body {
+      overflow: hidden;
+      height: 100%;
+      max-height: 100vh;
+    }
+    /* Kulüp Temaları için Dinamik Arka Planlar */
+    .bg-galatasaray {
+      background: linear-gradient(90deg, #a90429 50%, #fdb813 50%);
+    }
+    .bg-fenerbahce {
+      background: linear-gradient(90deg, #0f2042 50%, #fdb813 50%);
+    }
+    .bg-besiktas {
+      background: linear-gradient(90deg, #000000 50%, #ffffff 50%);
+    }
+    .bg-barcelona {
+      background: linear-gradient(90deg, #004d98 50%, #a50044 50%);
+    }
+    .bg-realmadrid {
+      background: linear-gradient(135deg, #ffffff 70%, #dec15a 100%);
+    }
+    .bg-milan {
+      background: linear-gradient(90deg, #e32219 50%, #000000 50%);
+    }
+    .bg-inter {
+      background: linear-gradient(90deg, #0053a0 50%, #000000 50%);
+    }
+    .bg-manunited {
+      background: #da291c;
+    }
+    .bg-chelsea {
+      background: #034694;
+    }
+    .bg-arsenal {
+      background: linear-gradient(135deg, #ef0107 70%, #ffffff 100%);
+    }
+    .bg-bayern {
+      background: #dc052d;
+    }
+    .bg-dortmund {
+      background: linear-gradient(90deg, #fde100 80%, #000000 100%);
+    }
+    .bg-juventus {
+      background: linear-gradient(90deg, #ffffff 50%, #000000 50%);
+    }
+    .bg-psg {
+      background: linear-gradient(90deg, #0052b4 40%, #e30613 40%, #e30613 60%, #0052b4 60%);
+    }
+    .bg-liverpool {
+      background: #c8102e;
+    }
+    .bg-trabzonspor {
+      background: linear-gradient(90deg, #800020 50%, #00a4e4 50%);
+    }
+    /* Özel Kaydırma Çubuğu */
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.5);
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white h-screen">
+
+  <!-- Üst Bar (Minimalist Header) -->
+  <header class="border-b border-indigo-950/60 bg-slate-900/40 backdrop-blur-md px-4 py-2 flex-shrink-0">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-gradient-to-tr from-indigo-600 to-amber-500 rounded-lg flex items-center justify-center shadow">
+          <i class="fa-solid fa-circle-nodes text-white text-sm"></i>
+        </div>
+        <div>
+          <h1 class="accent-font text-xs md:text-sm font-bold bg-gradient-to-r from-white to-amber-400 bg-clip-text text-transparent">
+            Ortak Bağ Bulucu v3
+          </h1>
+        </div>
+      </div>
+
+      <!-- Sağ Kontroller ve Skorlar -->
+      <div class="flex items-center gap-2">
+        <div id="game-active-badge" class="hidden px-2 py-0.5 bg-indigo-950 border border-indigo-800 text-[10px] rounded text-indigo-300 font-bold uppercase tracking-wider">
+          Aktif
+        </div>
+        <!-- Skor Tablosu -->
+        <div class="flex items-center gap-2 bg-slate-950 border border-indigo-950 px-2 py-1 rounded-lg text-xs font-semibold">
+          <div class="flex items-center gap-1" title="Aktif Seri">
+            <i class="fa-solid fa-fire text-amber-500"></i>
+            <span id="current-streak-val" class="text-amber-400">0</span>
+          </div>
+          <div class="w-px h-3 bg-indigo-900"></div>
+          <div class="flex items-center gap-1" title="Skor">
+            <i class="fa-solid fa-trophy text-indigo-400"></i>
+            <span id="current-score" class="text-indigo-300">0</span>
+          </div>
+        </div>
+        <!-- Menüye Dönüş Butonu -->
+        <button id="btn-menu-back" onclick="goToMainMenu()" class="hidden w-8 h-8 bg-slate-900 hover:bg-indigo-900 border border-indigo-950 rounded-lg flex items-center justify-center transition-all" title="Zorluk Değiştir / Menü">
+          <i class="fa-solid fa-gear text-xs text-indigo-400"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- GİRİŞ EKRANI (Zorluk Seviyesi ve Oyun Modu Seçimi) -->
+  <div id="setup-screen" class="flex-1 max-w-md mx-auto w-full flex flex-col justify-center px-4 overflow-y-auto custom-scroll">
+    <div class="bg-slate-900/60 border border-indigo-950/80 rounded-2xl p-6 backdrop-blur-md shadow-2xl relative overflow-hidden">
+      <!-- Glow -->
+      <div class="absolute -top-16 left-1/2 -translate-x-1/2 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl"></div>
+
+      <div class="text-center relative z-10 mb-6">
+        <h2 class="accent-font text-2xl font-black text-white tracking-tight">KAMPÜS ARENA</h2>
+        <p class="text-xs text-indigo-400 mt-1">Lütfen Oyun Modunu ve Zorluk Seviyesini Seçin</p>
+      </div>
+
+      <!-- Oyun Modu Seçimi -->
+      <div class="mb-5 relative z-10">
+        <label class="block text-[10px] text-indigo-300 font-extrabold uppercase tracking-widest mb-2">1. Oyun Modu</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button 
+            id="setup-mode-players" 
+            onclick="setSetupMode('players')" 
+            class="py-3 px-2 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 bg-indigo-600/20 border-indigo-500 text-white shadow-lg"
+          >
+            <i class="fa-solid fa-users text-sm text-indigo-400"></i>
+            <span>Ortak Arkadaş</span>
+          </button>
+          <button 
+            id="setup-mode-teams" 
+            onclick="setSetupMode('teams')" 
+            class="py-3 px-2 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 bg-slate-950 border-indigo-950/60 text-slate-400 hover:text-slate-200"
+          >
+            <i class="fa-solid fa-shield-halved text-sm text-amber-500"></i>
+            <span>Ortak Kulüp</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Zorluk Seviyesi Seçimi -->
+      <div class="mb-6 relative z-10">
+        <label class="block text-[10px] text-indigo-300 font-extrabold uppercase tracking-widest mb-2">2. Zorluk Seviyesi</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button 
+            id="setup-diff-easy" 
+            onclick="setSetupDifficulty('easy')" 
+            class="py-2.5 rounded-lg border text-xs font-bold transition-all bg-emerald-600/20 border-emerald-500/80 text-emerald-300"
+          >
+            Kolay
+          </button>
+          <button 
+            id="setup-diff-medium" 
+            onclick="setSetupDifficulty('medium')" 
+            class="py-2.5 rounded-lg border text-xs font-bold transition-all bg-slate-950 border-indigo-950/60 text-slate-400 hover:text-slate-200"
+          >
+            Orta
+          </button>
+          <button 
+            id="setup-diff-hard" 
+            onclick="setSetupDifficulty('hard')" 
+            class="py-2.5 rounded-lg border text-xs font-bold transition-all bg-slate-950 border-indigo-950/60 text-slate-400 hover:text-slate-200"
+          >
+            Zor
+          </button>
+        </div>
+      </div>
+
+      <!-- Başlat Butonu -->
+      <button 
+        onclick="startGameFromSetup()" 
+        class="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:opacity-95 text-white font-black rounded-xl text-sm shadow-xl active:scale-98 transition-all flex items-center justify-center gap-2 relative z-10"
+      >
+        <i class="fa-solid fa-play"></i>
+        <span>Oyunu Başlat (Rastgele Sorular)</span>
+      </button>
+
+      <div class="mt-4 text-center">
+        <button onclick="toggleHelpModal(true)" class="text-[10px] text-slate-400 hover:text-indigo-400 transition-colors">
+          <i class="fa-solid fa-circle-question mr-1"></i>Nasıl Oynanır & İpuçları
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AKTİF OYUN ALANI (Sadece Oyun Başlayınca Görünür) -->
+  <main id="game-play-screen" class="hidden flex-1 w-full max-w-4xl mx-auto flex flex-col justify-center px-4 py-2 overflow-hidden">
+    
+    <!-- Seviye Göstergesi ve Canlar -->
+    <div class="flex justify-between items-center mb-1.5 text-[11px] text-indigo-400 uppercase tracking-widest font-semibold px-1">
+      <span id="level-indicator">Yükleniyor...</span>
+      <span id="hearts-display" class="flex gap-1 text-red-500 text-xs">
+        <!-- Kalpler -->
+      </span>
+    </div>
+
+    <!-- Oyun Kartı Paneli -->
+    <div class="bg-slate-900/40 border border-indigo-950/60 rounded-2xl p-4 md:p-5 backdrop-blur-sm shadow-xl flex flex-col justify-between relative overflow-hidden flex-1 max-h-[50vh] min-h-[220px]">
+      
+      <!-- Ortam Arka Plan Lambaları -->
+      <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px] pointer-events-none"></div>
+
+      <!-- Bağlantı Grid Şeması -->
+      <div class="grid grid-cols-3 items-center gap-2 md:gap-4 flex-1 relative z-10">
+        
+        <!-- Sol Eleman Kartı (Oyuncu veya Kulüp) -->
+        <div id="left-card" class="bg-slate-950/90 border border-indigo-900/40 rounded-xl p-3 flex flex-col items-center text-center transition-all duration-300 h-full justify-center group relative overflow-hidden">
+          <div id="left-jersey-bg" class="absolute inset-0 opacity-10 transition-all"></div>
+          <div id="left-icon-container" class="w-12 h-12 md:w-16 md:h-16 bg-slate-900/80 border border-indigo-500/20 rounded-full flex items-center justify-center mb-1.5 relative z-10">
+            <i id="left-badge-icon" class="fa-solid fa-user-ninja text-indigo-400 text-xl md:text-2xl"></i>
+          </div>
+          <h3 id="left-item-name" class="font-bold text-xs md:text-sm text-white accent-font leading-tight max-w-[120px] z-10">Yükleniyor...</h3>
+          <span id="left-card-sub" class="text-[9px] px-1.5 py-0.5 bg-indigo-950/80 text-indigo-400 rounded-full mt-1 border border-indigo-900/40 z-10">X</span>
+        </div>
+
+        <!-- Orta Bilinmeyen Simgesi -->
+        <div class="flex flex-col items-center justify-center text-center relative">
+          <div class="absolute top-1/2 left-0 right-0 h-[1px] bg-gradient-to-r from-indigo-500/10 via-amber-500/30 to-indigo-500/10 -translate-y-1/2 -z-10"></div>
+          
+          <div class="w-16 h-16 md:w-20 md:h-20 bg-slate-950 border-2 border-amber-500/80 rounded-full flex flex-col items-center justify-center shadow-lg shadow-amber-500/10 transform hover:scale-105 transition-all relative z-10">
+            <i class="fa-solid fa-circle-question text-amber-400 text-2xl md:text-3xl animate-pulse"></i>
+            <span class="text-[8px] uppercase tracking-wider font-extrabold text-amber-500 mt-1">ORTAK BAĞ</span>
+          </div>
+        </div>
+
+        <!-- Sağ Eleman Kartı (Oyuncu veya Kulüp) -->
+        <div id="right-card" class="bg-slate-950/90 border border-indigo-900/40 rounded-xl p-3 flex flex-col items-center text-center transition-all duration-300 h-full justify-center group relative overflow-hidden">
+          <div id="right-jersey-bg" class="absolute inset-0 opacity-10 transition-all"></div>
+          <div id="right-icon-container" class="w-12 h-12 md:w-16 md:h-16 bg-slate-900/80 border border-indigo-500/20 rounded-full flex items-center justify-center mb-1.5 relative z-10">
+            <i id="right-badge-icon" class="fa-solid fa-user-ninja text-indigo-400 text-xl md:text-2xl"></i>
+          </div>
+          <h3 id="right-item-name" class="font-bold text-xs md:text-sm text-white accent-font leading-tight max-w-[120px] z-10">Yükleniyor...</h3>
+          <span id="right-card-sub" class="text-[9px] px-1.5 py-0.5 bg-indigo-950/80 text-indigo-400 rounded-full mt-1 border border-indigo-900/40 z-10">Y</span>
+        </div>
+
+      </div>
+
+      <!-- İpuçları Paneli -->
+      <div class="mt-2.5 pt-2.5 border-t border-indigo-950/50 flex items-center justify-between gap-3 relative z-10">
+        <!-- İpucu Satırı -->
+        <div id="clues-row" class="flex flex-wrap gap-1.5 items-center flex-1 overflow-hidden max-h-12">
+          <!-- İpuçları dinamik yüklenecek -->
+        </div>
+        <!-- Eylem Butonları -->
+        <div class="flex gap-1.5 flex-shrink-0">
+          <button id="btn-reveal-clue" onclick="revealNextClue()" class="w-8 h-8 md:w-auto md:px-3 bg-slate-950 hover:bg-indigo-950/50 border border-indigo-950 text-amber-400 hover:text-amber-300 rounded-lg flex items-center justify-center gap-1 transition-all" title="İpucu Al">
+            <i class="fa-solid fa-lightbulb text-sm"></i>
+            <span class="hidden md:inline text-xs font-semibold">İpucu</span>
+          </button>
+          <button onclick="skipLevel()" class="w-8 h-8 md:w-auto md:px-3 bg-slate-950 hover:bg-slate-900 border border-slate-900 text-slate-400 hover:text-slate-200 rounded-lg flex items-center justify-center gap-1 transition-all" title="Seviyeyi Pas Geç">
+            <i class="fa-solid fa-forward-step text-sm"></i>
+            <span class="hidden md:inline text-xs font-semibold">Pas</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Giriş ve Arama Alonı (Klavye Dostu) -->
+    <div class="mt-3.5 relative flex-shrink-0 z-30">
+      <div class="flex gap-2 items-center">
+        <div class="flex-1 relative">
+          <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-indigo-500">
+            <i class="fa-solid fa-futbol text-sm animate-spin-slow"></i>
+          </div>
+          <input 
+            type="text" 
+            id="guess-input" 
+            autocomplete="off"
+            placeholder="Ortak futbolcunun adını yazmaya başlayın..." 
+            class="w-full bg-slate-950 border border-indigo-900/60 hover:border-indigo-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 rounded-xl py-3.5 pl-10 pr-4 text-xs md:text-sm text-white placeholder-slate-500 font-semibold focus:outline-none transition-all shadow-inner"
+            oninput="handleInput(this.value)"
+            onkeydown="handleKeyNavigation(event)"
+          >
+          
+          <!-- Yukarı Doğru Açılan Öneri Havuzu -->
+          <div 
+            id="autocomplete-dropdown" 
+            class="hidden absolute bottom-full left-0 right-0 mb-2 bg-slate-950 border border-indigo-900/70 rounded-xl overflow-hidden shadow-2xl z-50 max-h-44 overflow-y-auto custom-scroll"
+          >
+            <!-- Öneriler -->
+          </div>
+        </div>
+
+        <!-- Gönder Butonu -->
+        <button 
+          onclick="checkUserGuess()"
+          class="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold px-5 py-3.5 rounded-xl shadow-md transition-all active:scale-95 text-xs md:text-sm flex items-center gap-1.5 flex-shrink-0 font-bold uppercase"
+        >
+          <i class="fa-solid fa-paper-plane"></i>
+          <span>GÖNDER</span>
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Alt Bilgi Kutusu -->
+  <footer class="border-t border-indigo-950/40 bg-slate-950/85 px-4 py-2 text-center text-[10px] text-slate-500 flex-shrink-0">
+    <div class="max-w-4xl mx-auto flex justify-between items-center">
+      <span>© 2026 Futbol Ortak Bağ Kurucu Portalı</span>
+      <div class="flex gap-3">
+        <a href="#" onclick="toggleHelpModal(true)" class="hover:text-indigo-400 transition-colors">Yordam</a>
+        <span>|</span>
+        <a href="#" onclick="resetAllStats()" class="hover:text-amber-500 transition-colors">Verileri Sıfırla</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Efektler için Canvas -->
+  <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50 w-full h-full"></canvas>
+
+  <!-- Modallar (Bilgilendirme & Aşama Bildirimleri) -->
+  <div id="game-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-indigo-950/80 rounded-2xl max-w-sm w-full p-5 text-center shadow-2xl relative overflow-hidden">
+      <div id="modal-banner-glow" class="absolute -top-16 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full blur-3xl opacity-30"></div>
+      
+      <!-- İkon -->
+      <div id="modal-icon-container" class="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl"></div>
+
+      <h2 id="modal-title" class="accent-font text-lg font-black mb-1 text-white">Sonuç</h2>
+      <p id="modal-body" class="text-slate-300 text-xs leading-relaxed mb-4">Mesaj alanı.</p>
+
+      <!-- Doğru cevap listesi kutusu -->
+      <div id="modal-answers-box" class="hidden mb-4 bg-slate-950/90 border border-indigo-950 p-2.5 rounded-lg text-left max-h-24 overflow-y-auto custom-scroll">
+        <p class="text-[10px] text-indigo-400 font-bold uppercase tracking-wider mb-0.5"><i class="fa-solid fa-list-check mr-1"></i> Doğru Kabul Edilen Tüm Cevaplar:</p>
+        <p id="modal-answers-list" class="text-[10px] text-slate-300 font-medium leading-relaxed"></p>
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <button id="modal-primary-btn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white text-xs font-bold rounded-lg shadow transition-all">
+          İlerle
+        </button>
+        <button id="modal-secondary-btn" onclick="closeModal()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-semibold rounded-lg transition-all">
+          Kapat
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Yardım Modalı -->
+  <div id="help-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-indigo-950/80 rounded-2xl max-w-sm w-full p-5 text-left shadow-2xl relative">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="accent-font text-sm font-bold text-white flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-info text-indigo-400"></i> Nasıl Oynanır?
+        </h3>
+        <button onclick="toggleHelpModal(false)" class="text-slate-400 hover:text-white transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-3 text-[11px] text-slate-300 leading-relaxed">
+        <p>⚽ <strong>Ortak Bağ Bulucu</strong>, futbol zekanızı dikey kurguda test eder:</p>
+        <div class="space-y-2 bg-slate-950/60 p-3 rounded-lg border border-indigo-950/60">
+          <div>
+            <span class="text-indigo-400 font-bold uppercase tracking-wider">Ortak Arkadaş Modu:</span>
+            <p class="text-slate-400">Verilen iki oyuncuyla da aynı kulüpte ya da milli takımda yan yana oynamış ortak futbolcuyu bulun.</p>
+          </div>
+          <div class="mt-1">
+            <span class="text-indigo-400 font-bold uppercase tracking-wider">Ortak Kulüp Modu:</span>
+            <p class="text-slate-400">Verilen iki kulübün ikisinde de resmi mukaveleyle forma giymiş ortak futbolcuyu tahmin edin.</p>
+          </div>
+        </div>
+        <p>🎲 <strong>Rastgele Soru & Zorluk:</strong> Kolay, Orta veya Zor seviyeyi seçtiğinizde, o zorluktaki sorular tamamen karıştırılarak önünüze gelir.</p>
+        <p class="text-amber-400/90 font-medium">💡 Her seviyede 3 canınız bulunur. Can bitmesi durumunda seriniz sıfırlanır ve o seviye baştan yüklenir.</p>
+      </div>
+
+      <button onclick="toggleHelpModal(false)" class="w-full mt-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs transition-all">
+        Hazırım, Oyuna Başla!
+      </button>
+    </div>
+  </div>
+
+  <!-- Audio Motoru (Retro Synth Ses Efektleri) -->
+  <script>
+    const AudioEngine = {
+      ctx: null,
+      init() {
+        if (!this.ctx) {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      },
+      playCorrect() {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(587.33, now); // D5
+        osc.frequency.setValueAtTime(880, now + 0.08); // A5
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      },
+      playWrong() {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.linearRampToValueAtTime(70, now + 0.25);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      },
+      playSuccess() {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, index) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + (index * 0.06));
+          gain.gain.setValueAtTime(0.06, now + (index * 0.06));
+          gain.gain.exponentialRampToValueAtTime(0.01, now + (index * 0.06) + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + (index * 0.06));
+          osc.stop(now + (index * 0.06) + 0.25);
+        });
+      }
+    };
+  </script>
+
+  <!-- Oyun Veritabanı ve Çalışma Mantığı -->
+  <script>
+    // GENİŞLETİLMİŞ SORU VERİTABANI
+    const questionsDatabase = {
+      players: [
+        // --- KOLAY (EASY) ---
+        {
+          difficulty: "easy",
+          player1: "Lionel Messi",
+          player2: "Cristiano Ronaldo",
+          answers: ["Angel Di Maria", "Sergio Ramos", "Gerard Pique", "Paulo Dybala", "Gonzalo Higuain", "Carlos Tevez", "Deco", "Henrik Larsson", "Nelson Semedo", "Arthur Melo", "Miralem Pjanic", "Keylor Navas", "Achraf Hakimi", "Vitinha", "Renato Sanches", "Gabriel Heinze", "Fernando Gago", "Ezequiel Garay", "Pablo Sarabia"],
+          clues: [
+            { type: "Millet", value: "Arjantin 🇦🇷" },
+            { type: "Mevki", value: "Kanat / Ofansif Orta Saha" },
+            { type: "Kulüpler", value: "Benfica / Real Madrid / PSG" }
+          ]
+        },
+        {
+          difficulty: "easy",
+          player1: "Zlatan Ibrahimović",
+          player2: "Thiago Silva",
+          answers: ["Maxwell", "Edinson Cavani", "Marco Verratti", "Marquinhos", "Salvatore Sirigu", "Ezequiel Lavezzi", "Javier Pastore", "Lucas Moura", "Blaise Matuidi", "Adrien Rabiot", "Gianluigi Donnarumma"],
+          clues: [
+            { type: "Millet", value: "Brezilya 🇧🇷" },
+            { type: "Mevki", value: "Sol Bek" },
+            { type: "Kulüpler", value: "PSG / Barcelona / Ajax / Inter" }
+          ]
+        },
+        {
+          difficulty: "easy",
+          player1: "Mauro Icardi",
+          player2: "Dries Mertens",
+          answers: ["Fernando Muslera", "Victor Osimhen", "Lucas Torreira", "Davinson Sanchez", "Kaan Ayhan", "Baris Alper Yilmaz", "Kerem Akturkoglu", "Abdulkerim Bardakci", "Hakim Ziyech", "Wilfried Zaha", "Michy Batshuayi", "Gabriel Sara", "Victor Nelsson", "Ismail Jakobs"],
+          clues: [
+            { type: "Millet", value: "Uruguay 🇺🇾" },
+            { type: "Mevki", value: "Kaleci / Efsane" },
+            { type: "Kulüpler", value: "Galatasaray / Lazio / Nacional" }
+          ]
+        },
+        {
+          difficulty: "easy",
+          player1: "Didier Drogba",
+          player2: "Wesley Sneijder",
+          answers: ["Fernando Muslera", "Felipe Melo", "Emmanuel Eboue", "Selcuk Inan", "Burak Yilmaz", "Semih Kaya", "Albert Riera", "Aurelien Chedjou", "Sabri Sarioglu", "Yuto Nagatomo", "Johan Elmander"],
+          clues: [
+            { type: "Millet", value: "Brezilya 🇧🇷" },
+            { type: "Mevki", value: "Agresif Pitbull Orta Saha" },
+            { type: "Kulüpler", value: "Galatasaray / Juventus / Fiorentina" }
+          ]
+        },
+        {
+          difficulty: "easy",
+          player1: "Erling Haaland",
+          player2: "Jude Bellingham",
+          answers: ["Marco Reus", "Mats Hummels", "Jadon Sancho", "Julian Brandt", "Raphael Guerreiro", "Manuel Akanji", "Giovanni Reyna", "Emre Can", "Axel Witsel", "Gregor Kobel", "Thomas Meunier"],
+          clues: [
+            { type: "Millet", value: "Almanya 🇩🇪" },
+            { type: "Mevki", value: "Sadık Dortmund Kaptanı / Kanat" },
+            { type: "Kulüpler", value: "Borussia Dortmund / Monchengladbach" }
+          ]
+        },
+        // --- ORTA (MEDIUM) ---
+        {
+          difficulty: "medium",
+          player1: "Kevin De Bruyne",
+          player2: "Mohamed Salah",
+          answers: ["Eden Hazard", "Romelu Lukaku", "John Terry", "Frank Lampard", "Oscar", "Fernando Torres", "Petr Cech", "Gary Cahill", "Branislav Ivanovic", "Willian", "Cesar Azpilicueta", "Thibaut Courtois", "Samuel Eto'o", "Demba Ba"],
+          clues: [
+            { type: "Millet", value: "Belçika 🇧🇪" },
+            { type: "Mevki", value: "Süperstar Sol Kanat" },
+            { type: "Kulüpler", value: "Chelsea / Real Madrid / Lille" }
+          ]
+        },
+        {
+          difficulty: "medium",
+          player1: "Arda Turan",
+          player2: "Radamel Falcao",
+          answers: ["Fernando Muslera", "Diego Costa", "Koke", "Diego Godin", "Filipe Luis", "Thibaut Courtois", "Miranda", "Gabi", "Sofiane Feghouli", "Ryan Babel", "Marcao", "Christian Luyindama"],
+          clues: [
+            { type: "Millet", value: "Brezilya 🇧🇷" },
+            { type: "Mevki", value: "Sol Bek" },
+            { type: "Kulüpler", value: "Atletico Madrid / Chelsea / Depor" }
+          ]
+        },
+        {
+          difficulty: "medium",
+          player1: "Mesut Özil",
+          player2: "Alexis Sanchez",
+          answers: ["Olivier Giroud", "Laurent Koscielny", "Aaron Ramsey", "Santi Cazorla", "Hector Bellerin", "Petr Cech", "Nacho Monreal", "Theo Walcott", "Granit Xhaka", "Danny Welbeck", "Shkodran Mustafi", "David Ospina"],
+          clues: [
+            { type: "Millet", value: "Fransa 🇫🇷" },
+            { type: "Mevki", value: "Santrafor" },
+            { type: "Kulüpler", value: "Arsenal / Chelsea / Milan" }
+          ]
+        },
+        {
+          difficulty: "medium",
+          player1: "Karim Benzema",
+          player2: "Kylian Mbappé",
+          answers: ["Raphael Varane", "Antoine Griezmann", "Olivier Giroud", "Paul Pogba", "N'Golo Kante", "Hugo Lloris", "Aurelien Tchouameni", "Eduardo Camavinga", "Ferland Mendy", "Lucas Hernandez", "Benjamin Pavard", "Ousmane Dembele", "Adrien Rabiot", "Kingsley Coman"],
+          clues: [
+            { type: "Millet", value: "Fransa 🇫🇷" },
+            { type: "Mevki", value: "Stoper" },
+            { type: "Kulüpler", value: "Real Madrid / Manchester United / Lens" }
+          ]
+        },
+        {
+          difficulty: "medium",
+          player1: "Harry Kane",
+          player2: "Heung-min Son",
+          answers: ["Hugo Lloris", "Christian Eriksen", "Dele Alli", "Jan Vertonghen", "Toby Alderweireld", "Eric Dier", "Moussa Sissoko", "Serge Aurier", "Ben Davies", "Kieran Trippier", "Lucas Moura", "Pierre-Emile Hojbjerg", "Davinson Sanchez"],
+          clues: [
+            { type: "Millet", value: "Fransa 🇫🇷" },
+            { type: "Mevki", value: "Kaleci" },
+            { type: "Kulüpler", value: "Tottenham / Lyon / Nice" }
+          ]
+        },
+        // --- ZOR (HARD) ---
+        {
+          difficulty: "hard",
+          player1: "Luka Modrić",
+          player2: "Gareth Bale",
+          answers: ["Karim Benzema", "Cristiano Ronaldo", "Sergio Ramos", "Toni Kroos", "Casemiro", "Marcelo", "Raphael Varane", "Dani Carvajal", "Isco", "Keylor Navas", "Nacho Fernandez", "Lucas Vazquez", "Thibaut Courtois", "Emmanuel Adebayor", "Mateo Kovacic", "Rafael van der Vaart"],
+          clues: [
+            { type: "Millet", value: "Hırvatistan 🇭🇷" },
+            { type: "Mevki", value: "Orta Saha" },
+            { type: "Kulüpler", value: "Real Madrid / Chelsea / Inter" }
+          ]
+        },
+        {
+          difficulty: "hard",
+          player1: "Hakan Çalhanoğlu",
+          player2: "Andrea Pirlo",
+          answers: ["Mario Balotelli", "Leonardo Bonucci", "Gianluigi Donnarumma", "Zlatan Ibrahimovic", "Sandro Tonali", "Simon Kjaer"],
+          clues: [
+            { type: "Millet", value: "İtalya 🇮🇹" },
+            { type: "Mevki", value: "Santrafor (Super Mario)" },
+            { type: "Kulüpler", value: "Inter / Milan / Man City / Adana Demirspor" }
+          ]
+        },
+        {
+          difficulty: "hard",
+          player1: "Luis Suárez",
+          player2: "Antoine Griezmann",
+          answers: ["Jan Oblak", "Lionel Messi", "Gerard Pique", "Jordi Alba", "Sergio Busquets", "Marc-Andre ter Stegen", "Ivan Rakitic", "Sergi Roberto", "Clement Lenglet", "Koke", "Angel Correa", "Jose Maria Gimenez", "Joao Felix", "Alvaro Morata", "Yannick Carrasco"],
+          clues: [
+            { type: "Millet", value: "Slovenya 🇸🇮" },
+            { type: "Mevki", value: "Dünya Çapında Kaleci" },
+            { type: "Kulüpler", value: "Atletico Madrid / Benfica" }
+          ]
+        },
+        {
+          difficulty: "hard",
+          player1: "Eden Hazard",
+          player2: "Thibaut Courtois",
+          answers: ["Romelu Lukaku", "Kevin De Bruyne", "Toby Alderweireld", "Jan Vertonghen", "Axel Witsel", "Willian", "Cesar Azpilicueta", "N'Golo Kante", "Diego Costa", "Gary Cahill", "Cesc Fabregas", "Karim Benzema", "Luka Modric", "Toni Kroos", "David Alaba", "Ferland Mendy", "Vinicius Junior", "Rodrygo"],
+          clues: [
+            { type: "Millet", value: "Belçika 🇧🇪" },
+            { type: "Mevki", value: "Santrafor" },
+            { type: "Kulüpler", value: "Chelsea / Inter / Roma / Everton" }
+          ]
+        },
+        {
+          difficulty: "hard",
+          player1: "Andrea Pirlo",
+          player2: "Paul Pogba",
+          answers: ["Gianluigi Buffon", "Giorgio Chiellini", "Leonardo Bonucci", "Claudio Marchisio", "Arturo Vidal", "Carlos Tevez", "Alvaro Morata", "Stephan Lichtsteiner", "Patrice Evra", "Kingsley Coman"],
+          clues: [
+            { type: "Millet", value: "Fransa 🇫🇷" },
+            { type: "Mevki", value: "Sol Bek / Manchester Efsanesi" },
+            { type: "Kulüpler", value: "Manchester United / Juventus / Monaco / Marseille" }
+          ]
+        }
+      ],
+      teams: [
+        // --- KOLAY (EASY) ---
+        {
+          difficulty: "easy",
+          team1: "Real Madrid",
+          team1Key: "realmadrid",
+          team2: "Barcelona",
+          team2Key: "barcelona",
+          answers: ["Ronaldo Nazario", "Luis Figo", "Luis Enrique", "Samuel Eto'o", "Javier Saviola", "Gheorghe Hagi", "Julen Lopetegui", "Bernd Schuster", "Robert Prosinecki", "Ronaldo", "Hagi", "Figo", "Eto'o"],
+          clues: [
+            { type: "Millet", value: "Brezilya 🇧🇷" },
+            { type: "Mevki", value: "Efsanevi 9 Numara / Fenomen" },
+            { type: "Kulüpler", value: "Real Madrid / Barcelona / Inter / Milan" }
+          ]
+        },
+        {
+          difficulty: "easy",
+          team1: "Galatasaray",
+          team1Key: "galatasaray",
+          team2: "Fenerbahçe",
+          team2Key: "fenerbahce",
+          answers: ["Emre Belozoglu", "Emre Belözoğlu", "Burak Yilmaz", "Burak Yılmaz", "Caner Erkin", "Mehmet Topal", "Sergen Yalcin", "Sergen Yalçın", "Colin Kazim-Richards", "Colin Kazım-Richards", "Fatih Akyel", "Elvir Balic", "Elvir Baliç", "Elvir Bolic", "Elvir Boliç", "Tanju Çolak", "Tanju Colak", "Servet Çetin", "Servet Cetin", "Gökhan Gönül", "Gokhan Gonul", "Tolga Ciğerci", "Tolga Cigerci", "Michy Batshuayi", "Batshuayi", "Sener Ozbayrakli", "Şener Özbayraklı", "Tolgay Arslan"],
+          clues: [
+            { type: "Millet", value: "Türkiye 🇹🇷" },
+            { type: "Mevki", value: "Sol Bek / Orta Saha" },
+            { type: "Kulüpler", value: "Fenerbahçe / Galatasaray / Beşiktaş / Inter / Başakşehir" }
+          ]
+        },
+        {
+          difficulty: "easy",
+          team1: "Manchester United",
+          team1Key: "manunited",
+          team2: "Real Madrid",
+          team2Key: "realmadrid",
+          answers: ["Cristiano Ronaldo", "Ronaldo", "David Beckham", "Beckham", "Ruud van Nistelrooy", "Van Nistelrooy", "Angel Di Maria", "Di Maria", "Raphael Varane", "Varane", "Casemiro", "Javier Hernandez", "Chicharito", "Michael Owen", "Gabriel Heinze"],
+          clues: [
+            { type: "Millet", value: "İngiltere 🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+            { type: "Mevki", value: "Frikik Ustası / Sağ Açık" },
+            { type: "Özellik", value: "7 Numara, Hollywood karizması, LA Galaxy" }
+          ]
+        },
+        {
+          difficulty: "easy",
+          team1: "Beşiktaş",
+          team1Key: "besiktas",
+          team2: "Fenerbahçe",
+          team2Key: "fenerbahce",
+          answers: ["Sergen Yalcin", "Sergen Yalçın", "Gökhan Gönül", "Gokhan Gonul", "Caner Erkin", "Tümer Metin", "Tumer Metin", "Rüstü Reçber", "Rüştü Reçber", "Mert Günok", "Tolgay Arslan", "Josef de Souza", "Michy Batshuayi", "Mamadu Niang", "Jeremain Lens", "Ugur Boral", "Uğur Boral", "Mehmet Aurelio"],
+          clues: [
+            { type: "Millet", value: "Türkiye 🇹🇷" },
+            { type: "Mevki", value: "Kaleci" },
+            { type: "Özellik", value: "Barcelona kalesini korumuş, milli dev" }
+          ]
+        },
+        {
+          difficulty: "easy",
+          team1: "Bayern Münih",
+          team1Key: "bayern",
+          team2: "Borussia Dortmund",
+          team2Key: "dortmund",
+          answers: ["Robert Lewandowski", "Mats Hummels", "Mario Götze", "Mario Gotze", "Ivan Perisic", "Niklas Süle", "Niklas Sule", "Torsten Frings", "Sebastian Rode", "Raphael Guerreiro", "Robert Kovac", "Emre Can"],
+          clues: [
+            { type: "Millet", value: "Polonya 🇵🇱" },
+            { type: "Mevki", value: "Gol Makinesi Santrafor" },
+            { type: "Özellik", value: "Barça'ya transfer olan, Bundesliga rekor kırıcısı" }
+          ]
+        },
+        // --- ORTA (MEDIUM) ---
+        {
+          difficulty: "medium",
+          team1: "Arsenal",
+          team1Key: "arsenal",
+          team2: "Chelsea",
+          team2Key: "chelsea",
+          answers: ["Cesc Fabregas", "Ashley Cole", "Nicolas Anelka", "Petr Cech", "Olivier Giroud", "Willian", "David Luiz", "Pierre-Emerick Aubameyang", "Kai Havertz", "Jorginho", "Raheem Sterling", "William Gallas", "Yossi Benayoun", "Lassana Diarra"],
+          clues: [
+            { type: "Millet", value: "İspanya 🇪🇸" },
+            { type: "Mevki", value: "Maestro Orta Saha" },
+            { type: "Özellik", value: "Barça altyapısından çıkan, asist kralı" }
+          ]
+        },
+        {
+          difficulty: "medium",
+          team1: "AC Milan",
+          team1Key: "milan",
+          team2: "Inter",
+          team2Key: "inter",
+          answers: ["Zlatan Ibrahimovic", "Andrea Pirlo", "Clarence Seedorf", "Ronaldo Nazario", "Mario Balotelli", "Hernan Crespo", "Roberto Baggio", "Leonardo Bonucci", "Hakan Calhanoglu", "Hakan Çalhanoğlu", "Francesco Acerbi", "Christian Vieri", "Sulley Muntari", "Patrick Vieira", "Amantino Mancini"],
+          clues: [
+            { type: "Millet", value: "Türkiye 🇹🇷" },
+            { type: "Mevki", value: "Oyun Kurucu / Orta Saha" },
+            { type: "Özellik", value: "Doğrudan Milan'dan Inter'e transfer oldu, frikik ustası" }
+          ]
+        },
+        {
+          difficulty: "medium",
+          team1: "PSG",
+          team1Key: "psg",
+          team2: "Barcelona",
+          team2Key: "barcelona",
+          answers: ["Lionel Messi", "Neymar", "Neymar Jr", "Ronaldinho", "Zlatan Ibrahimovic", "Dani Alves", "Maxwell", "Thiago Motta", "Ludovic Giuly", "Lucas Digne", "Ousmane Dembele", "Rafinha", "Giovani Lo Celso", "Xavi Simons"],
+          clues: [
+            { type: "Millet", value: "Brezilya 🇧🇷" },
+            { type: "Mevki", value: "Süperstar Sol Kanat / Sol Açık" },
+            { type: "Özellik", value: "Santos çıkışlı, Barcelona'da MSN üçlüsünün parçasıydı" }
+          ]
+        },
+        {
+          difficulty: "medium",
+          team1: "Galatasaray",
+          team1Key: "galatasaray",
+          team2: "Beşiktaş",
+          team2Key: "besiktas",
+          answers: ["Sergen Yalcin", "Sergen Yalçın", "Burak Yilmaz", "Burak Yılmaz", "Gökhan Zan", "Gokhan Zan", "Mehmet Topal", "Dany Nounkeu", "Ryan Babel", "Caner Erkin", "Ayhan Akman", "Emre Aşık", "Emre Asik", "Okan Buruk", "Cenk Tosun", "Gökhan Töre", "Tolgay Arslan"],
+          clues: [
+            { type: "Millet", value: "Türkiye 🇹🇷" },
+            { type: "Mevki", value: "Golcü Santrafor" },
+            { type: "Özellik", value: "Kral lakaplı, Lille ile Fransa'da şampiyonluk yaşamış yıldız" }
+          ]
+        },
+        {
+          difficulty: "medium",
+          team1: "Juventus",
+          team1Key: "juventus",
+          team2: "AC Milan",
+          team2Key: "milan",
+          answers: ["Andrea Pirlo", "Zlatan Ibrahimovic", "Filippo Inzaghi", "Roberto Baggio", "Edgar Davids", "Leonardo Bonucci", "Gonzalo Higuain", "Alvaro Morata", "Christian Vieri", "Gianluca Zambrotta", "Patrick Vieira", "Alessandro Matri", "Mario Mandzukic"],
+          clues: [
+            { type: "Millet", value: "İtalya 🇮🇹" },
+            { type: "Mevki", value: "Regista / Oyun Kurucu" },
+            { type: "Özellik", value: "Frikikleriyle ünlü, şık saçlı ve sakallı İtalyan centilmen" }
+          ]
+        },
+        // --- ZOR (HARD) ---
+        {
+          difficulty: "hard",
+          team1: "Liverpool",
+          team1Key: "liverpool",
+          team2: "Chelsea",
+          team2Key: "chelsea",
+          answers: ["Fernando Torres", "Mohamed Salah", "Daniel Sturridge", "Nicolas Anelka", "Yossi Benayoun", "Raul Meireles", "Glen Johnson", "Raheem Sterling", "Victor Moses", "Dominic Solanke", "Christian Benteke", "Boudewijn Zenden"],
+          clues: [
+            { type: "Millet", value: "İspanya 🇪🇸" },
+            { type: "Mevki", value: "Yırtıcı Santrafor (El Niño)" },
+            { type: "Özellik", value: "Liverpool'da efsaneleşip Ocak ayında 50 milyon pounda Chelsea'ye transfer olmuştu" }
+          ]
+        },
+        {
+          difficulty: "hard",
+          team1: "Manchester City",
+          team1Key: "chelsea",
+          team2: "Barcelona",
+          team2Key: "barcelona",
+          answers: ["Yaya Toure", "Sergio Agüero", "Aguero", "Claudio Bravo", "Eric Garcia", "Ferran Torres", "Ilkay Gündogan", "İlkay Gündoğan", "Joao Cancelo", "Sylvinho", "Nolito", "Denis Suarez"],
+          clues: [
+            { type: "Millet", value: "Fildişi Sahili 🇨🇮" },
+            { type: "Mevki", value: "Devasa Güçlü Orta Saha" },
+            { type: "Özellik", value: "Manchester City formasıyla efsaneleşen, Barça'da stoper de oynamış yıldız" }
+          ]
+        },
+        {
+          difficulty: "hard",
+          team1: "Inter",
+          team1Key: "inter",
+          team2: "Real Madrid",
+          team2Key: "realmadrid",
+          answers: ["Ronaldo Nazario", "Luis Figo", "Roberto Carlos", "Wesley Sneijder", "Esteban Cambiasso", "Walter Samuel", "Mateo Kovacic", "Achraf Hakimi", "Alexis Sanchez", "Clarence Seedorf", "Ivan Zamorano", "Christian Panucci"],
+          clues: [
+            { type: "Millet", value: "Brezilya 🇧🇷" },
+            { type: "Mevki", value: "Sol Bek Füzesi" },
+            { type: "Özellik", value: "İnanılmaz frikik hızı, Fenerbahçe'de de oynamıştır" }
+          ]
+        },
+        {
+          difficulty: "hard",
+          team1: "Galatasaray",
+          team1Key: "galatasaray",
+          team2: "Real Madrid",
+          team2Key: "realmadrid",
+          answers: ["Wesley Sneijder", "Didier Drogba", "Gheorghe Hagi", "Hamit Altintop", "Hamit Altıntop", "Jose Rodriguez", "Gheorghe Popescu", "Elvir Balic", "Elvir Baliç"],
+          clues: [
+            { type: "Millet", value: "Hollanda 🇳🇱" },
+            { type: "Mevki", value: "10 Numara Sniper" },
+            { type: "Özellik", value: "Uzaktan şutları, Real'de oynayıp GS ile efsaneleşmesi (Sneijder)" }
+          ]
+        },
+        {
+          difficulty: "hard",
+          team1: "Fenerbahçe",
+          team1Key: "fenerbahce",
+          team2: "Trabzonspor",
+          team2Key: "trabzonspor",
+          answers: ["Egemen Korkmaz", "Gökhan Gönül", "Gokhan Gonul", "Mehmet Ekici", "Olcan Adin", "Olcan Adın", "Burak Yilmaz", "Burak Yılmaz", "Özer Hurmacı", "Ozer Hurmaci", "Senol Corlu", "Şenol Çorlu", "Filip Novak", "Jose Sosa", "Umut Bulut", "Volkan Sen", "Volkan Şen", "Serkan Balcı", "Tolga Zengin"],
+          clues: [
+            { type: "Millet", value: "Türkiye 🇹🇷" },
+            { type: "Mevki", value: "Stoper" },
+            { type: "Özellik", value: "Savaşçı stoper lakaplı, her iki takımla da şampiyonluk yarışlarında yer aldı" }
+          ]
+        }
+      ]
+    };
+
+    // OTOMATİK TAMAMLAMA HAVUZU (Tüm Cevapları Kapsayan Geniş Liste)
+    const playersDatabase = [
+      "Lionel Messi", "Cristiano Ronaldo", "Angel Di Maria", "Sergio Ramos", "Gerard Pique", 
+      "Paulo Dybala", "Gonzalo Higuain", "Carlos Tevez", "Deco", "Henrik Larsson", 
+      "Nelson Semedo", "Arthur Melo", "Miralem Pjanic", "Keylor Navas", "Achraf Hakimi", 
+      "Vitinha", "Renato Sanches", "Zlatan Ibrahimovic", "Thiago Silva", "Maxwell", 
+      "Edinson Cavani", "Marco Verratti", "Marquinhos", "Salvatore Sirigu", "Ezequiel Lavezzi", 
+      "Javier Pastore", "Lucas Moura", "Blaise Matuidi", "Adrien Rabiot", "Robert Lewandowski", 
+      "Thomas Muller", "Manuel Neuer", "Joshua Kimmich", "David Alaba", "Jerome Boateng", 
+      "Franck Ribery", "Arjen Robben", "Kingsley Coman", "Leon Goretzka", "Serge Gnabry", 
+      "Thiago Alcantara", "Kevin De Bruyne", "Mohamed Salah", "Eden Hazard", "Romelu Lukaku", 
+      "John Terry", "Frank Lampard", "Oscar", "Fernando Torres", "Petr Cech", 
+      "Gary Cahill", "Branislav Ivanovic", "Willian", "Cesar Azpilicueta", "Arda Turan", 
+      "Radamel Falcao", "Fernando Muslera", "Diego Costa", "Koke", "Diego Godin", 
+      "Filipe Luis", "Thibaut Courtois", "Miranda", "Gabi", "Sofiane Feghouli", 
+      "Erling Haaland", "Jude Bellingham", "Marco Reus", "Mats Hummels", "Jadon Sancho", 
+      "Julian Brandt", "Raphael Guerreiro", "Manuel Akanji", "Giovanni Reyna", "Emre Can", 
+      "Axel Witsel", "Gregor Kobel", "Ronaldinho", "Neymar", "Dani Alves", "Neymar Jr",
+      "Robinho", "Alexandre Pato", "Adriano", "Ganso", "Mesut Ozil", "Mesut Özil",
+      "Alexis Sanchez", "Olivier Giroud", "Laurent Koscielny", "Aaron Ramsey", "Santi Cazorla", 
+      "Hector Bellerin", "Nacho Monreal", "Theo Walcott", "Granit Xhaka", "Shkodran Mustafi", 
+      "Karim Benzema", "Kylian Mbappe", "Raphael Varane", "Antoine Griezmann", "Paul Pogba", 
+      "N'Golo Kante", "Hugo Lloris", "Aurelien Tchouameni", "Eduardo Camavinga", "Ferland Mendy", 
+      "Lucas Hernandez", "Benjamin Pavard", "Ousmane Dembele", "Harry Kane", "Heung-min Son", 
+      "Christian Eriksen", "Dele Alli", "Jan Vertonghen", "Toby Alderweireld", "Eric Dier", 
+      "Moussa Sissoko", "Serge Aurier", "Ben Davies", "Kieran Trippier", "Hakan Calhanoglu", 
+      "Hakan Çalhanoğlu", "Gianluigi Donnarumma", "Theo Hernandez", "Franck Kessie", 
+      "Alessio Romagnoli", "Davide Calabria", "Rafael Leao", "Ante Rebic", "Simon Kjaer", 
+      "Ismael Bennacer", "Luis Suarez", "Luis Suárez", "Jan Oblak", "Jordi Alba", "Sergio Busquets", 
+      "Marc-Andre ter Stegen", "Ivan Rakitic", "Sergi Roberto", "Clement Lenglet", "Angel Correa", 
+      "Jose Maria Gimenez", "Didier Drogba", "Wesley Sneijder", "Felipe Melo", "Emmanuel Eboue", 
+      "Selcuk Inan", "Selçuk İnan", "Burak Yilmaz", "Burak Yılmaz", "Semih Kaya", "Albert Riera", 
+      "Luka Modric", "Luka Modrić", "Gareth Bale", "Bruno Fernandes", "Marcus Rashford", 
+      "Luke Shaw", "David de Gea", "Harry Maguire", "Scott McTominay", "Fred", "Diogo Dalot", 
+      "Bernardo Silva", "Ruben Dias", "Joao Cancelo", "Diogo Jota", "Joao Felix", "Pepe", 
+      "Rui Patricio", "Andrea Pirlo", "Giorgio Chiellini", "Leonardo Bonucci", "Claudio Marchisio", 
+      "Arturo Vidal", "Alvaro Morata", "Stephan Lichtsteiner", "Patrice Evra", "Presnel Kimpembe", 
+      "Leandro Paredes", "Mauro Icardi", "Andres Iniesta", "Iker Casillas", "David Villa", 
+      "Xabi Alonso", "Carles Puyol", "Xavi", "Cesc Fabregas", "Victor Valdes", "Alvaro Arbeloa", 
+      "Juan Mata", "David Silva", "Pepe Reina", "Pedro", "Dries Mertens", "Victor Osimhen", 
+      "Lucas Torreira", "Davinson Sanchez", "Kaan Ayhan", "Baris Alper Yilmaz", "Kerem Akturkoglu", 
+      "Kerem Aktürkoğlu", "Abdulkerim Bardakci", "Abdülkerim Bardakcı", "Hakim Ziyech", 
+      "Wilfried Zaha", "Tanguy Ndombele", "Michy Batshuayi", "Ronaldo Nazario", "Luis Figo", 
+      "Luis Enrique", "Samuel Eto'o", "Javier Saviola", "Gheorghe Hagi", "Julen Lopetegui", 
+      "Bernd Schuster", "Robert Prosinecki", "Emre Belozoglu", "Emre Belözoğlu", "Caner Erkin", 
+      "Mehmet Topal", "Sergen Yalcin", "Sergen Yalçın", "Colin Kazim-Richards", "Colin Kazım-Richards", 
+      "Fatih Akyel", "Elvir Balic", "Elvir Baliç", "Elvir Bolic", "Elvir Boliç", "Tanju Çolak", 
+      "Tanju Colak", "Servet Çetin", "Servet Cetin", "Gökhan Gönül", "Gokhan Gonul", "Tolga Ciğerci", 
+      "Tolga Cigerci", "David Beckham", "Ruud van Nistelrooy", "Ashley Cole", "Nicolas Anelka", 
+      "Mario Balotelli", "Hernan Crespo", "Roberto Baggio", "Mario Götze", "Mario Gotze", 
+      "Niklas Süle", "Niklas Sule", "Torsten Frings", "Sebastian Rode", "Tümer Metin", "Tumer Metin", 
+      "Rüstü Reçber", "Rüştü Reçber", "Mert Günok", "Josef de Souza", "Filippo Inzaghi", 
+      "Edgar Davids", "Thierry Henry", "Alex Song", "Alexander Hleb", "Thomas Vermaelen", 
+      "Yaya Toure", "Sergio Agüero", "Aguero", "Claudio Bravo", "Eric Garcia", "Ferran Torres", 
+      "Ilkay Gündogan", "İlkay Gündoğan", "Roberto Carlos", "Esteban Cambiasso", "Walter Samuel", 
+      "Mateo Kovacic", "Hamit Altintop", "Hamit Altıntop", "Jose Rodriguez", "Gheorghe Popescu",
+      "Garry Rodrigues", "Ceyhun Gülselam", "Semih Şentürk", "Umut Nayir", "William Gallas",
+      "Yossi Benayoun", "Lassana Diarra", "Christian Vieri", "Sulley Muntari", "Patrick Vieira",
+      "Amantino Mancini", "Giovani Lo Celso", "Xavi Simons", "Kays Ruiz-Atil", "Gökhan Töre",
+      "Adem Ljajic", "Alessandro Matri", "Mario Mandzukic", "Daniel Sturridge", "Raul Meireles",
+      "Glen Johnson", "Raheem Sterling", "Victor Moses", "Dominic Solanke", "Christian Benteke",
+      "Boudewijn Zenden", "Nolito", "Geovanni", "Denis Suarez", "Pablo Maffeo", "Ivan Zamorano",
+      "Christian Panucci", "Egemen Korkmaz", "Mehmet Ekici", "Olcan Adın", "Özer Hurmacı",
+      "Serkan Balcı", "Tolga Zengin", "Gabriel Sara", "Victor Nelsson", "Ismail Jakobs"
+    ];
+
+    // OYUN DURUM DEĞİŞKENLERİ
+    let currentSetupMode = 'players'; // 'players' veya 'teams'
+    let currentSetupDifficulty = 'easy'; // 'easy', 'medium', 'hard'
+
+    let activeLevelList = []; // Karıştırılmış aktif soru havuzu
+    let activeLevelIndex = 0;
+
+    let score = 0;
+    let currentStreak = 0;
+    let lives = 3;
+    let revealedCluesCount = 0;
+    let dropdownSelectedIndex = -1;
+
+    // DOM BAĞLANTILARI
+    const elSetupScreen = document.getElementById("setup-screen");
+    const elGamePlayScreen = document.getElementById("game-play-screen");
+    const elMenuBackBtn = document.getElementById("btn-menu-back");
+    const elActiveBadge = document.getElementById("game-active-badge");
+
+    const elLeftCard = document.getElementById("left-card");
+    const elRightCard = document.getElementById("right-card");
+    const elLeftJersey = document.getElementById("left-jersey-bg");
+    const elRightJersey = document.getElementById("right-jersey-bg");
+    const elLeftBadgeIcon = document.getElementById("left-badge-icon");
+    const elRightBadgeIcon = document.getElementById("right-badge-icon");
+    const elLeftItemName = document.getElementById("left-item-name");
+    const elRightItemName = document.getElementById("right-item-name");
+    const elLeftCardSub = document.getElementById("left-card-sub");
+    const elRightCardSub = document.getElementById("right-card-sub");
+
+    const elLevelIndicator = document.getElementById("level-indicator");
+    const elHearts = document.getElementById("hearts-display");
+    const elCluesRow = document.getElementById("clues-row");
+    const elInput = document.getElementById("guess-input");
+    const elDropdown = document.getElementById("autocomplete-dropdown");
+    const elRevealClueBtn = document.getElementById("btn-reveal-clue");
+
+    const elCurrentStreakVal = document.getElementById("current-streak-val");
+    const elScoreVal = document.getElementById("current-score");
+
+    // Modal DOM
+    const elModal = document.getElementById("game-modal");
+    const elModalTitle = document.getElementById("modal-title");
+    const elModalBody = document.getElementById("modal-body");
+    const elModalPrimaryBtn = document.getElementById("modal-primary-btn");
+    const elModalAnswersBox = document.getElementById("modal-answers-box");
+    const elModalAnswersList = document.getElementById("modal-answers-list");
+    const elModalIconContainer = document.getElementById("modal-icon-container");
+    const elModalGlow = document.getElementById("modal-banner-glow");
+
+    // Fisher-Yates Algoritması ile Rastgele Karıştırma
+    function shuffleArray(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // GİRİŞ EKRANI SEÇİM YÖNETİCİLERİ
+    function setSetupMode(mode) {
+      currentSetupMode = mode;
+      const btnPlayers = document.getElementById("setup-mode-players");
+      const btnTeams = document.getElementById("setup-mode-teams");
+
+      if (mode === 'players') {
+        btnPlayers.className = "py-3 px-2 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 bg-indigo-600/20 border-indigo-500 text-white shadow-lg";
+        btnTeams.className = "py-3 px-2 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 bg-slate-950 border-indigo-950/60 text-slate-400 hover:text-slate-200";
+      } else {
+        btnTeams.className = "py-3 px-2 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 bg-indigo-600/20 border-indigo-500 text-white shadow-lg";
+        btnPlayers.className = "py-3 px-2 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 bg-slate-950 border-indigo-950/60 text-slate-400 hover:text-slate-200";
+      }
+    }
+
+    function setSetupDifficulty(diff) {
+      currentSetupDifficulty = diff;
+      const btnEasy = document.getElementById("setup-diff-easy");
+      const btnMedium = document.getElementById("setup-diff-medium");
+      const btnHard = document.getElementById("setup-diff-hard");
+
+      // Reset
+      [btnEasy, btnMedium, btnHard].forEach(btn => {
+        btn.className = "py-2.5 rounded-lg border text-xs font-bold transition-all bg-slate-950 border-indigo-950/60 text-slate-400 hover:text-slate-200";
+      });
+
+      if (diff === 'easy') {
+        btnEasy.className = "py-2.5 rounded-lg border text-xs font-bold transition-all bg-emerald-600/20 border-emerald-500/80 text-emerald-300 shadow-md";
+      } else if (diff === 'medium') {
+        btnMedium.className = "py-2.5 rounded-lg border text-xs font-bold transition-all bg-amber-600/20 border-amber-500/80 text-amber-300 shadow-md";
+      } else {
+        btnHard.className = "py-2.5 rounded-lg border text-xs font-bold transition-all bg-rose-600/20 border-rose-500/80 text-rose-300 shadow-md";
+      }
+    }
+
+    // MENÜ / GİRİŞ EKRANINA DÖNÜŞ
+    function goToMainMenu() {
+      elSetupScreen.classList.remove("hidden");
+      elGamePlayScreen.classList.add("hidden");
+      elMenuBackBtn.classList.add("hidden");
+      elActiveBadge.classList.add("hidden");
+      closeDropdown();
+    }
+
+    // KURULUMDAN OYUNU BAŞLATMA
+    function startGameFromSetup() {
+      // Skor verilerini yerel hafızadan çekelim
+      const savedScore = localStorage.getItem("ob_score_v3");
+      const savedStreak = localStorage.getItem("ob_streak_v3");
+      if (savedScore) score = parseInt(savedScore);
+      if (savedStreak) currentStreak = parseInt(savedStreak);
+      updateStatsDisplay();
+
+      // Soru Havuzunu Filtreleme
+      const rawPool = questionsDatabase[currentSetupMode];
+      const filteredPool = rawPool.filter(q => q.difficulty === currentSetupDifficulty);
+
+      if (filteredPool.length === 0) {
+        alert("Bu mod ve zorlukta şu an kayıtlı soru bulunamadı!");
+        return;
+      }
+
+      // Rastgele karıştırma (Sonsuz varyasyon)
+      activeLevelList = shuffleArray(filteredPool);
+      activeLevelIndex = 0;
+
+      // Ekran Geçişleri
+      elSetupScreen.classList.add("hidden");
+      elGamePlayScreen.classList.remove("hidden");
+      elMenuBackBtn.classList.remove("hidden");
+      elActiveBadge.classList.remove("hidden");
+
+      // Aktif Seviyeyi Yükleme
+      loadCurrentActiveLevel();
+    }
+
+    function loadCurrentActiveLevel() {
+      if (activeLevelIndex >= activeLevelList.length) {
+        triggerModeCompletion();
+        return;
+      }
+
+      const level = activeLevelList[activeLevelIndex];
+
+      // Değişkenleri Sıfırlama
+      lives = 3;
+      revealedCluesCount = 0;
+      updateHearts();
+      elInput.value = "";
+      closeDropdown();
+      renderClues(level);
+
+      // İpucu Buton Kontrolü
+      elRevealClueBtn.disabled = false;
+      elRevealClueBtn.classList.remove("opacity-50", "cursor-not-allowed");
+
+      // Arayüz Moduna Göre Güncelleme
+      const isPlayers = currentSetupMode === 'players';
+      const difficultyText = currentSetupDifficulty === 'easy' ? 'Kolay' : (currentSetupDifficulty === 'medium' ? 'Orta' : 'Zor');
+
+      elLevelIndicator.textContent = `${isPlayers ? 'Arkadaş' : 'Kulüp'} (${difficultyText}): Seviye ${activeLevelIndex + 1} / ${activeLevelList.length}`;
+
+      if (isPlayers) {
+        // Oyuncu Kartları
+        elLeftItemName.textContent = level.player1;
+        elRightItemName.textContent = level.player2;
+
+        elLeftCardSub.textContent = "Teammate I";
+        elRightCardSub.textContent = "Teammate II";
+
+        elLeftJersey.className = "absolute inset-0 bg-indigo-600/[0.04]";
+        elRightJersey.className = "absolute inset-0 bg-indigo-600/[0.04]";
+        elLeftBadgeIcon.className = "fa-solid fa-user-ninja text-indigo-400 text-xl md:text-2xl";
+        elRightBadgeIcon.className = "fa-solid fa-user-ninja text-indigo-400 text-xl md:text-2xl";
+
+        elLeftCard.className = "bg-slate-950/90 border border-indigo-900/40 rounded-xl p-3 flex flex-col items-center text-center transition-all duration-300 h-full justify-center group relative overflow-hidden";
+        elRightCard.className = "bg-slate-950/90 border border-indigo-900/40 rounded-xl p-3 flex flex-col items-center text-center transition-all duration-300 h-full justify-center group relative overflow-hidden";
+      } else {
+        // Kulüp Kartları
+        elLeftItemName.textContent = level.team1;
+        elRightItemName.textContent = level.team2;
+
+        elLeftCardSub.textContent = "Kulüp A";
+        elRightCardSub.textContent = "Kulüp B";
+
+        elLeftJersey.className = `absolute inset-0 opacity-20 bg-${level.team1Key}`;
+        elRightJersey.className = `absolute inset-0 opacity-20 bg-${level.team2Key}`;
+
+        elLeftBadgeIcon.className = "fa-solid fa-shield-halved text-amber-400 text-xl md:text-2xl";
+        elRightBadgeIcon.className = "fa-solid fa-shield-halved text-amber-400 text-xl md:text-2xl";
+
+        elLeftCard.className = "bg-slate-950/90 border border-indigo-900/40 rounded-xl p-3 flex flex-col items-center text-center transition-all duration-300 h-full justify-center group relative overflow-hidden ring-1 ring-amber-500/20";
+        elRightCard.className = "bg-slate-950/90 border border-indigo-900/40 rounded-xl p-3 flex flex-col items-center text-center transition-all duration-300 h-full justify-center group relative overflow-hidden ring-1 ring-amber-500/20";
+      }
+    }
+
+    function renderClues(level) {
+      elCluesRow.innerHTML = "";
+      
+      // Zorluk derecesine göre ipucu sınırlandırması
+      let maxCluesToShow = level.clues.length;
+      if (currentSetupDifficulty === 'medium') maxCluesToShow = 2;
+      if (currentSetupDifficulty === 'hard') maxCluesToShow = 1;
+
+      for (let idx = 0; idx < maxCluesToShow; idx++) {
+        const clue = level.clues[idx];
+        const isRevealed = idx < revealedCluesCount;
+        const badge = document.createElement("div");
+        badge.className = `px-2 py-1 rounded-lg border text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all duration-300 ${
+          isRevealed 
+          ? 'bg-indigo-950/85 border-indigo-500/40 text-indigo-300' 
+          : 'bg-slate-950 border-slate-900 text-slate-500'
+        }`;
+        
+        if (isRevealed) {
+          badge.innerHTML = `<span class="text-amber-500">${clue.type}:</span> <span>${clue.value}</span>`;
+        } else {
+          badge.innerHTML = `<i class="fa-solid fa-lock text-[9px] text-indigo-500/40"></i> <span>İpucu ${idx + 1}</span>`;
+          badge.onclick = () => revealNextClue();
+        }
+        elCluesRow.appendChild(badge);
+      }
+    }
+
+    function revealNextClue() {
+      const level = activeLevelList[activeLevelIndex];
+      let maxCluesToShow = level.clues.length;
+      if (currentSetupDifficulty === 'medium') maxCluesToShow = 2;
+      if (currentSetupDifficulty === 'hard') maxCluesToShow = 1;
+
+      if (revealedCluesCount < maxCluesToShow) {
+        revealedCluesCount++;
+        renderClues(level);
+        AudioEngine.playCorrect();
+        
+        if (revealedCluesCount === maxCluesToShow) {
+          elRevealClueBtn.disabled = true;
+          elRevealClueBtn.classList.add("opacity-50", "cursor-not-allowed");
+        }
+      }
+    }
+
+    function updateHearts() {
+      elHearts.innerHTML = "";
+      for (let i = 0; i < 3; i++) {
+        const heart = document.createElement("i");
+        if (i < lives) {
+          heart.className = "fa-solid fa-heart animate-pulse text-red-500";
+        } else {
+          heart.className = "fa-regular fa-heart opacity-25 text-slate-500";
+        }
+        elHearts.appendChild(heart);
+      }
+    }
+
+    // Karşılaştırma Karakter Normalizasyonu
+    function normalizeString(str) {
+      if (!str) return "";
+      return str
+        .toLowerCase()
+        .trim()
+        .replace(/ı/g, 'i')
+        .replace(/ğ/g, 'g')
+        .replace(/ü/g, 'u')
+        .replace(/ş/g, 's')
+        .replace(/ö/g, 'o')
+        .replace(/ç/g, 'c')
+        .replace(/â/g, 'a')
+        .replace(/é/g, 'e')
+        .replace(/í/g, 'i')
+        .replace(/á/g, 'a')
+        .replace(/ó/g, 'o')
+        .replace(/ú/g, 'u')
+        .replace(/ñ/g, 'n')
+        .replace(/[^a-z0-9]/gi, '');
+    }
+
+    function isValidAnswer(userGuess, validAnswers) {
+      const normalizedGuess = normalizeString(userGuess);
+      if (!normalizedGuess) return false;
+
+      return validAnswers.some(ans => {
+        const normalizedAns = normalizeString(ans);
+        return normalizedGuess === normalizedAns || 
+               (normalizedGuess.length > 4 && normalizedAns.includes(normalizedGuess)) ||
+               (normalizedAns.length > 4 && normalizedGuess.includes(normalizedAns));
+      });
+    }
+
+    function checkUserGuess() {
+      const guessValue = elInput.value.trim();
+      if (!guessValue) return;
+
+      const level = activeLevelList[activeLevelIndex];
+
+      if (isValidAnswer(guessValue, level.answers)) {
+        // Başarılı Tahmin
+        currentStreak++;
+        localStorage.setItem("ob_streak_v3", currentStreak);
+        
+        const addedScore = 100 + (lives * 20) - (revealedCluesCount * 10);
+        score += addedScore;
+        localStorage.setItem("ob_score_v3", score);
+        
+        updateStatsDisplay();
+        AudioEngine.playCorrect();
+        triggerConfetti();
+
+        showSuccessModal(level, guessValue);
+      } else {
+        // Hatalı Tahmin
+        lives--;
+        updateHearts();
+        AudioEngine.playWrong();
+        shakePanel();
+
+        if (lives <= 0) {
+          currentStreak = 0;
+          localStorage.setItem("ob_streak_v3", 0);
+          updateStatsDisplay();
+          showGameOverModal(level);
+        } else {
+          elInput.classList.add("border-red-500", "ring-2", "ring-red-500/20");
+          setTimeout(() => {
+            elInput.classList.remove("border-red-500", "ring-2", "ring-red-500/20");
+          }, 1000);
+        }
+      }
+    }
+
+    function skipLevel() {
+      currentStreak = 0;
+      localStorage.setItem("ob_streak_v3", 0);
+      updateStatsDisplay();
+
+      const level = activeLevelList[activeLevelIndex];
+      showSkipModal(level);
+    }
+
+    // MODAL YÖNETİMİ
+    function showSuccessModal(level, userGuess) {
+      const isPlayers = currentSetupMode === 'players';
+      const canonicalMatch = level.answers.find(ans => {
+        const nGuess = normalizeString(userGuess);
+        const nAns = normalizeString(ans);
+        return nGuess === nAns || nAns.includes(nGuess) || nGuess.includes(nAns);
+      }) || userGuess;
+
+      elModalIconContainer.className = "w-14 h-14 bg-emerald-500/10 border border-emerald-500/40 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl text-emerald-400";
+      elModalIconContainer.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
+      elModalGlow.className = "absolute -top-16 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full blur-3xl opacity-35 bg-emerald-500";
+
+      elModalTitle.textContent = "Süper Tahmin!";
+      elModalTitle.className = "accent-font text-lg font-black mb-1 text-emerald-400";
+
+      if (isPlayers) {
+        elModalBody.innerHTML = `Mükemmel! <strong>${canonicalMatch}</strong>, hem <strong>${level.player1}</strong> hem de <strong>${level.player2}</strong> ile aynı sahayı paylaşmıştır.`;
+      } else {
+        elModalBody.innerHTML = `Harika! <strong>${canonicalMatch}</strong>, hem <strong>${level.team1}</strong> hem de <strong>${level.team2}</strong> formalarını terletmiştir.`;
+      }
+
+      elModalAnswersBox.classList.remove("hidden");
+      elModalAnswersList.textContent = level.answers.join(", ");
+
+      elModalPrimaryBtn.textContent = "Sıradaki Seviye";
+      elModalPrimaryBtn.className = "w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-98 text-white text-xs font-bold rounded-lg shadow transition-all";
+      
+      elModalPrimaryBtn.onclick = function() {
+        closeModal();
+        activeLevelIndex++;
+        loadCurrentActiveLevel();
+      };
+
+      elModal.classList.remove("hidden");
+    }
+
+    function showGameOverModal(level) {
+      elModalIconContainer.className = "w-14 h-14 bg-red-500/10 border border-red-500/40 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl text-red-400";
+      elModalIconContainer.innerHTML = `<i class="fa-solid fa-heart-crack"></i>`;
+      elModalGlow.className = "absolute -top-16 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full blur-3xl opacity-35 bg-red-500";
+
+      elModalTitle.textContent = "Canlar Tükendi!";
+      elModalTitle.className = "accent-font text-lg font-black mb-1 text-red-400";
+      elModalBody.innerHTML = `Maalesef hakkın bitti. Doğru cevapları incele ve bu seviyeyi tekrar dene!`;
+
+      elModalAnswersBox.classList.remove("hidden");
+      elModalAnswersList.textContent = level.answers.join(", ");
+
+      elModalPrimaryBtn.textContent = "Tekrar Dene";
+      elModalPrimaryBtn.className = "w-full py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 active:scale-98 text-white text-xs font-bold rounded-lg shadow transition-all";
+      
+      elModalPrimaryBtn.onclick = function() {
+        closeModal();
+        loadCurrentActiveLevel();
+      };
+
+      elModal.classList.remove("hidden");
+    }
+
+    function showSkipModal(level) {
+      elModalIconContainer.className = "w-14 h-14 bg-amber-500/10 border border-amber-500/40 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl text-amber-400";
+      elModalIconContainer.innerHTML = `<i class="fa-solid fa-forward"></i>`;
+      elModalGlow.className = "absolute -top-16 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full blur-3xl opacity-35 bg-amber-500";
+
+      elModalTitle.textContent = "Pas Geçildi";
+      elModalTitle.className = "accent-font text-lg font-black mb-1 text-amber-400";
+      elModalBody.innerHTML = `Seviye pas geçildi. İşte kabul edilen ortak isimler:`;
+
+      elModalAnswersBox.classList.remove("hidden");
+      elModalAnswersList.textContent = level.answers.join(", ");
+
+      elModalPrimaryBtn.textContent = "Sıradaki Seviyeye İlerle";
+      elModalPrimaryBtn.className = "w-full py-2.5 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 active:scale-98 text-white text-xs font-bold rounded-lg shadow transition-all";
+      
+      elModalPrimaryBtn.onclick = function() {
+        closeModal();
+        activeLevelIndex++;
+        loadCurrentActiveLevel();
+      };
+
+      elModal.classList.remove("hidden");
+    }
+
+    function triggerModeCompletion() {
+      AudioEngine.playSuccess();
+      triggerConfettiMax();
+
+      elModalIconContainer.className = "w-14 h-14 bg-yellow-500/10 border border-yellow-500/40 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl text-yellow-400 animate-bounce";
+      elModalIconContainer.innerHTML = `<i class="fa-solid fa-trophy"></i>`;
+      elModalGlow.className = "absolute -top-16 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full blur-3xl opacity-50 bg-yellow-500";
+
+      elModalTitle.textContent = "Zirveye Ulaştın!";
+      elModalTitle.className = "accent-font text-lg font-black mb-1 text-yellow-400";
+      elModalBody.innerHTML = `Seçtiğin tüm seviyeleri başarıyla tamamladın! Şimdi başka bir zorluk seviyesini veya diğer modu denemeye ne dersin?<br><br><strong>Güncel Skorun: ${score}</strong>`;
+
+      elModalAnswersBox.classList.add("hidden");
+
+      elModalPrimaryBtn.textContent = "Ana Menüye Dön";
+      elModalPrimaryBtn.className = "w-full py-2.5 bg-gradient-to-r from-yellow-600 to-amber-500 hover:from-yellow-500 hover:to-amber-400 active:scale-98 text-white text-xs font-bold rounded-lg shadow transition-all";
+      
+      elModalPrimaryBtn.onclick = function() {
+        closeModal();
+        goToMainMenu();
+      };
+
+      elModal.classList.remove("hidden");
+    }
+
+    function closeModal() {
+      elModal.classList.add("hidden");
+    }
+
+    function toggleHelpModal(show) {
+      const helpModal = document.getElementById("help-modal");
+      if (show) {
+        helpModal.classList.remove("hidden");
+      } else {
+        helpModal.classList.add("hidden");
+      }
+    }
+
+    function updateStatsDisplay() {
+      elScoreVal.textContent = score;
+      elCurrentStreakVal.textContent = currentStreak;
+    }
+
+    function resetAllStats() {
+      if (confirm("Kayıtlı puanınızı ve tüm başarı geçmişinizi sıfırlamak istiyor musunuz?")) {
+        score = 0;
+        currentStreak = 0;
+        localStorage.clear();
+        updateStatsDisplay();
+        goToMainMenu();
+      }
+    }
+
+    function shakePanel() {
+      const board = document.querySelector(".bg-slate-900\\/40");
+      board.classList.add("animate-bounce");
+      setTimeout(() => {
+        board.classList.remove("animate-bounce");
+      }, 400);
+    }
+
+    // KLAVYE VE ÖNERİ SİSTEMİ (Yukarı Doğru Açılan Pencere)
+    function handleInput(value) {
+      if (!value) {
+        closeDropdown();
+        return;
+      }
+
+      const query = normalizeString(value);
+      const matches = playersDatabase.filter(p => normalizeString(p).includes(query));
+      const uniqueMatches = Array.from(new Set(matches)).slice(0, 4); // Ekrana sığması için maks 4 öneri
+
+      if (uniqueMatches.length > 0) {
+        renderDropdown(uniqueMatches);
+      } else {
+        closeDropdown();
+      }
+    }
+
+    function renderDropdown(matches) {
+      elDropdown.innerHTML = "";
+      dropdownSelectedIndex = -1;
+
+      matches.forEach((player) => {
+        const item = document.createElement("div");
+        item.className = "px-4 py-2.5 hover:bg-indigo-950 cursor-pointer text-xs text-slate-200 flex items-center justify-between border-b border-indigo-950/40 last:border-0 transition-colors";
+        item.innerHTML = `<span>${player}</span><span class="text-[9px] text-indigo-500"><i class="fa-regular fa-futbol"></i></span>`;
+        item.onclick = function() {
+          selectPlayer(player);
+        };
+        elDropdown.appendChild(item);
+      });
+
+      elDropdown.classList.remove("hidden");
+    }
+
+    function selectPlayer(player) {
+      elInput.value = player;
+      closeDropdown();
+      elInput.focus();
+    }
+
+    function closeDropdown() {
+      elDropdown.classList.add("hidden");
+      elDropdown.innerHTML = "";
+      dropdownSelectedIndex = -1;
+    }
+
+    document.addEventListener("click", function(e) {
+      if (e.target !== elInput && e.target !== elDropdown) {
+        closeDropdown();
+      }
+    });
+
+    function handleKeyNavigation(e) {
+      const items = elDropdown.querySelectorAll("div");
+      if (elDropdown.classList.contains("hidden") || items.length === 0) {
+        if (e.key === "Enter") {
+          checkUserGuess();
+        }
+        return;
+      }
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        dropdownSelectedIndex = (dropdownSelectedIndex + 1) % items.length;
+        highlightDropdownItem(items);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        dropdownSelectedIndex = (dropdownSelectedIndex - 1 + items.length) % items.length;
+        highlightDropdownItem(items);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (dropdownSelectedIndex >= 0 && dropdownSelectedIndex < items.length) {
+          items[dropdownSelectedIndex].click();
+        } else {
+          items[0].click();
+        }
+      } else if (e.key === "Escape") {
+        closeDropdown();
+      }
+    }
+
+    function highlightDropdownItem(items) {
+      items.forEach((item, idx) => {
+        if (idx === dropdownSelectedIndex) {
+          item.classList.add("bg-indigo-900/50", "border-l-4", "border-indigo-500");
+          item.scrollIntoView({ block: "nearest" });
+        } else {
+          item.classList.remove("bg-indigo-900/50", "border-l-4", "border-indigo-500");
+        }
+      });
+    }
+
+    // CANVAS KONFETİ MOTORU
+    const canvas = document.getElementById("confetti-canvas");
+    const ctx = canvas.getContext("2d");
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+      constructor(x, y, maxVel) {
+        this.x = x;
+        this.y = y;
+        this.size = Math.random() * 6 + 3;
+        this.color = `hsl(${Math.random() * 360}, 85%, 60%)`;
+        this.angle = Math.random() * Math.PI * 2;
+        this.speed = Math.random() * maxVel + 2;
+        this.opacity = 1;
+        this.decay = Math.random() * 0.02 + 0.01;
+      }
+      update() {
+        this.x += Math.cos(this.angle) * this.speed;
+        this.y += Math.sin(this.angle) * this.speed + 0.6;
+        this.opacity -= this.decay;
+      }
+      draw() {
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function triggerConfetti() {
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      for (let i = 0; i < 60; i++) {
+        particles.push(new Particle(cx, cy, 6));
+      }
+      animateConfetti();
+    }
+
+    function triggerConfettiMax() {
+      for (let i = 0; i < 120; i++) {
+        particles.push(new Particle(80, window.innerHeight - 80, 12));
+        particles.push(new Particle(window.innerWidth - 80, window.innerHeight - 80, 12));
+      }
+      animateConfetti();
+    }
+
+    let animId = null;
+    function animateConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles = particles.filter(p => p.opacity > 0);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+
+      if (particles.length > 0) {
+        animId = requestAnimationFrame(animateConfetti);
+      } else {
+        cancelAnimationFrame(animId);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Zaman Havuzlu Kronometre Futbolu</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;600;800&display=swap');
+    
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #020617;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow: hidden;
+    }
+    
+    .digital-font {
+      font-family: 'Orbitron', monospace;
+    }
+
+    .pitch-bg {
+      background-image: 
+        linear-gradient(rgba(16, 185, 129, 0.04) 2px, transparent 2px),
+        linear-gradient(90deg, rgba(16, 185, 129, 0.04) 2px, transparent 2px);
+      background-size: 30px 30px;
+    }
+    
+    .progress-bar {
+      transition: width 50ms linear;
+    }
+
+    .pulse-warning {
+      animation: warn-pulse 1.2s infinite alternate;
+    }
+    @keyframes warn-pulse {
+      0% { border-color: rgba(239, 68, 68, 0.2); box-shadow: 0 0 2px rgba(239, 68, 68, 0); }
+      100% { border-color: rgba(239, 68, 68, 0.7); box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
+    }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between overflow-hidden relative pitch-bg">
+
+  <!-- ================= LOBİ EKRANI ================= -->
+  <div id="lobbyScreen" class="absolute inset-0 z-50 bg-slate-950/98 flex flex-col justify-center items-center p-4 overflow-y-auto">
+    <div class="max-w-4xl w-full bg-slate-900 border border-emerald-500/30 rounded-2xl p-6 shadow-2xl">
+      <div class="text-center mb-6">
+        <span class="bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">Sadeleştirilmiş UX Sürümü</span>
+        <h1 class="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 tracking-tight mt-2 mb-2">KRONOMETRE FUTBOL</h1>
+        <p class="text-slate-400 text-xs">Sıfırlanan durumlar, 4 atak sakatlık süresi ve saf istatistiki HUD paneli.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <!-- TAKIM A -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-rose-500/20">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-rose-400 font-bold flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span> ÜST TAKIM
+            </h2>
+            <button onclick="randomizePlayers('A')" class="text-[11px] bg-rose-950/50 text-rose-300 px-2.5 py-1 rounded border border-rose-500/20 hover:bg-rose-900 transition">Kadro Yenile</button>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5 text-xs" id="teamAPlayerSetup"></div>
+        </div>
+
+        <!-- TAKIM B -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-cyan-500/20">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-cyan-400 font-bold flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 animate-pulse"></span> ALT TAKIM
+            </h2>
+            <button onclick="randomizePlayers('B')" class="text-[11px] bg-cyan-950/50 text-cyan-300 px-2.5 py-1 rounded border border-cyan-500/20 hover:bg-cyan-900 transition">Kadro Yenile</button>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5 text-xs" id="teamBPlayerSetup"></div>
+        </div>
+      </div>
+
+      <!-- BAŞLAT -->
+      <div class="flex flex-col items-center">
+        <button onclick="startGame()" class="w-full md:w-auto px-16 py-3.5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-black text-xl rounded-xl transition duration-200 transform hover:scale-105 shadow-lg shadow-emerald-500/10">
+          MAÇA BAŞLA ⚽
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MAÇ SONU EKRANI ================= -->
+  <div id="gameOverScreen" class="absolute inset-0 z-50 bg-slate-950/98 hidden flex-col justify-center items-center p-6 text-center">
+    <div class="max-w-md w-full bg-slate-900 rounded-2xl p-6 border border-amber-500/20 shadow-2xl">
+      <div class="text-5xl mb-3 animate-bounce">🏆</div>
+      <h2 class="text-3xl font-black text-amber-400 tracking-tight">DÜDÜK ÇALDI</h2>
+      <p id="gameResultStatus" class="text-emerald-400 font-bold text-base mb-4"></p>
+      
+      <div class="flex items-center justify-center gap-6 bg-slate-950 p-4 rounded-xl border border-slate-800 mb-4">
+        <div>
+          <p class="text-[10px] text-rose-400 font-bold tracking-wider mb-1">ÜST TAKIM</p>
+          <p id="finalScoreA" class="text-3xl font-black text-white digital-font">0</p>
+        </div>
+        <div class="text-slate-700 text-xl font-bold">:</div>
+        <div>
+          <p class="text-[10px] text-cyan-400 font-bold tracking-wider mb-1">ALT TAKIM</p>
+          <p id="finalScoreB" class="text-3xl font-black text-white digital-font">0</p>
+        </div>
+      </div>
+
+      <div id="reasonText" class="text-slate-400 text-xs mb-5 px-3 py-2 bg-slate-950 rounded border border-slate-800"></div>
+
+      <button onclick="resetGame()" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-black text-base rounded-xl transition">
+        YENİ BAŞLANGIÇ 🔄
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ================= ÜST OYUNCU EKRANI (180° TERS) ================= -->
+  <div id="screenA" class="flex-1 relative border-b border-dashed border-emerald-500/20 rotate-180 transform origin-center flex flex-col justify-between p-2.5 overflow-hidden">
+    
+    <!-- Aktiflik Perdesi -->
+    <div id="overlayA" class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm z-30 flex flex-col justify-center items-center">
+      <div class="bg-slate-900/95 border border-rose-500/20 px-5 py-3 rounded-xl text-center max-w-xs">
+        <span class="inline-block w-2.5 h-2.5 bg-rose-500 rounded-full animate-ping mb-1"></span>
+        <h3 class="text-rose-400 font-bold text-xs tracking-widest">SIRA RAKİPTE</h3>
+      </div>
+    </div>
+
+    <!-- Skor ve 30s Kalan Zaman -->
+    <div class="flex justify-between items-center bg-slate-900/80 border border-slate-800 px-3 py-2 rounded-xl">
+      <div class="flex items-center gap-1">
+        <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+        <span class="font-bold text-xs text-rose-400">ÜST</span>
+      </div>
+      
+      <!-- Zaman Havuzu -->
+      <div class="flex items-center gap-1.5 bg-slate-950 px-2.5 py-0.5 rounded border border-rose-500/20">
+        <span class="text-[9px] font-bold text-slate-500">ZAMAN:</span>
+        <span id="matchClockA" class="digital-font font-black text-base text-rose-500">30.00s</span>
+      </div>
+
+      <div class="flex items-center gap-2 bg-slate-950 px-2 py-0.5 rounded border border-slate-850">
+        <span class="digital-font font-bold text-xs text-rose-500" id="liveScoreA1">0</span>
+        <span class="text-[9px] text-slate-500">:</span>
+        <span class="digital-font font-bold text-xs text-cyan-500" id="liveScoreB1">0</span>
+      </div>
+    </div>
+
+    <!-- Yerleşik Sonuç ve Kronometre Alanı -->
+    <div class="flex flex-col items-center justify-center my-auto py-1">
+      <!-- 5sn Limit Barı -->
+      <div class="w-full max-w-xs h-1 bg-slate-950 rounded-full overflow-hidden mb-2">
+        <div id="progressBarA" class="progress-bar h-full bg-rose-500" style="width: 100%;"></div>
+      </div>
+
+      <!-- 5s Şut Zamanlayıcısı -->
+      <div class="digital-font font-black text-center mb-1 text-slate-100 flex items-baseline gap-0.5">
+        <span class="text-4xl font-black" id="secA">00</span>
+        <span class="text-xl text-rose-500">.</span>
+        <span class="text-2xl text-rose-400 font-bold w-10 text-left" id="csecA">00</span>
+      </div>
+
+      <!-- YERLEŞİK SONUÇ HUD PANELI (A) -->
+      <div id="hudPanelA" class="w-full max-w-xs bg-slate-950 border border-rose-500/10 rounded-xl p-2.5 min-h-[96px] flex flex-col justify-center items-center text-center my-2">
+        <span class="text-[10px] text-rose-500/60 font-bold uppercase tracking-wider mb-1">DURUM PANELI</span>
+        <div id="hudContentA" class="text-xs font-semibold text-slate-300 space-y-1">
+          <div>🎮 MAÇ BAŞLAMAK ÜZERE</div>
+          <div class="text-[10px] text-slate-500">Butona basarak atağı başlatın.</div>
+        </div>
+      </div>
+
+      <!-- Tek Evrilen Buton (A) -->
+      <button id="btnActionA" onclick="onUnifiedBtnClick('A')" class="w-full max-w-xs py-3 bg-rose-600 text-white font-black text-sm rounded-xl active:scale-95 transition-all shadow-md uppercase tracking-wider select-none">
+        OYUNCU SEÇ (BAŞLAT) ⏱️
+      </button>
+    </div>
+
+    <!-- Kadro Izgarası -->
+    <div class="bg-slate-950/60 border border-slate-900 p-1 rounded-lg">
+      <div class="grid grid-cols-5 gap-0.5" id="gridA"></div>
+    </div>
+
+    <!-- Canlı Log -->
+    <div class="bg-slate-900/50 border border-slate-850 p-1.5 rounded-lg h-12 overflow-y-auto text-[9px]" id="liveTickerA"></div>
+  </div>
+
+
+  <!-- ================= ALT OYUNCU EKRANI (DÜZ) ================= -->
+  <div id="screenB" class="flex-1 relative border-t border-dashed border-emerald-500/20 flex flex-col justify-between p-2.5 overflow-hidden">
+    
+    <!-- Aktiflik Perdesi -->
+    <div id="overlayB" class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm z-30 flex flex-col justify-center items-center">
+      <div class="bg-slate-900/95 border border-cyan-500/20 px-5 py-3 rounded-xl text-center max-w-xs">
+        <span class="inline-block w-2.5 h-2.5 bg-cyan-500 rounded-full animate-ping mb-1"></span>
+        <h3 class="text-cyan-400 font-bold text-xs tracking-widest">SIRA RAKİPTE</h3>
+      </div>
+    </div>
+
+    <!-- Skor ve 30s Kalan Zaman -->
+    <div class="flex justify-between items-center bg-slate-900/80 border border-slate-800 px-3 py-2 rounded-xl">
+      <div class="flex items-center gap-1">
+        <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
+        <span class="font-bold text-xs text-cyan-400">ALT</span>
+      </div>
+
+      <!-- Zaman Havuzu -->
+      <div class="flex items-center gap-1.5 bg-slate-950 px-2.5 py-0.5 rounded border border-cyan-500/20">
+        <span class="text-[9px] font-bold text-slate-500">ZAMAN:</span>
+        <span id="matchClockB" class="digital-font font-black text-base text-cyan-500">30.00s</span>
+      </div>
+
+      <div class="flex items-center gap-2 bg-slate-950 px-2 py-0.5 rounded border border-slate-850">
+        <span class="digital-font font-bold text-xs text-rose-500" id="liveScoreA2">0</span>
+        <span class="text-[9px] text-slate-500">:</span>
+        <span class="digital-font font-bold text-xs text-cyan-500" id="liveScoreB2">0</span>
+      </div>
+    </div>
+
+    <!-- Yerleşik Sonuç ve Kronometre Alanı -->
+    <div class="flex flex-col items-center justify-center my-auto py-1">
+      <!-- 5sn Limit Barı -->
+      <div class="w-full max-w-xs h-1 bg-slate-950 rounded-full overflow-hidden mb-2">
+        <div id="progressBarB" class="progress-bar h-full bg-cyan-500" style="width: 100%;"></div>
+      </div>
+
+      <!-- 5s Şut Zamanlayıcısı -->
+      <div class="digital-font font-black text-center mb-1 text-slate-100 flex items-baseline gap-0.5">
+        <span class="text-4xl font-black" id="secB">00</span>
+        <span class="text-xl text-cyan-500">.</span>
+        <span class="text-2xl text-cyan-400 font-bold w-10 text-left" id="csecB">00</span>
+      </div>
+
+      <!-- YERLEŞİK SONUÇ HUD PANELI (B) -->
+      <div id="hudPanelB" class="w-full max-w-xs bg-slate-950 border border-cyan-500/10 rounded-xl p-2.5 min-h-[96px] flex flex-col justify-center items-center text-center my-2">
+        <span class="text-[10px] text-cyan-500/60 font-bold uppercase tracking-wider mb-1">DURUM PANELI</span>
+        <div id="hudContentB" class="text-xs font-semibold text-slate-300 space-y-1">
+          <div>🎮 MAÇ BAŞLAMAK ÜZERE</div>
+          <div class="text-[10px] text-slate-500">Butona basarak atağı başlatın.</div>
+        </div>
+      </div>
+
+      <!-- Tek Evrilen Buton (B) -->
+      <button id="btnActionB" onclick="onUnifiedBtnClick('B')" class="w-full max-w-xs py-3 bg-cyan-600 text-white font-black text-sm rounded-xl active:scale-95 transition-all shadow-md uppercase tracking-wider select-none">
+        OYUNCU SEÇ (BAŞLAT) ⏱️
+      </button>
+    </div>
+
+    <!-- Kadro Izgarası -->
+    <div class="bg-slate-950/60 border border-slate-900 p-1 rounded-lg">
+      <div class="grid grid-cols-5 gap-0.5" id="gridB"></div>
+    </div>
+
+    <!-- Canlı Log -->
+    <div class="bg-slate-900/50 border border-slate-855 p-1.5 rounded-lg h-12 overflow-y-auto text-[9px]" id="liveTickerB"></div>
+  </div>
+
+
+  <!-- ================= JAVASCRIPT MOTORU ================= -->
+  <script>
+    // Kadrolar ve Havuzlar
+    const poolLegends = [
+      "L. Messi", "C. Ronaldo", "Ronaldinho", "Z. Zidane", "T. Henry", 
+      "A. Iniesta", "Xavi H.", "Z. Ibrahimović", "Kaká", "A. Pirlo"
+    ];
+    const poolStars = [
+      "Neymar Jr", "K. Mbappé", "E. Haaland", "K. De Bruyne", "L. Modrić", 
+      "R. Lewandowski", "K. Benzema", "M. Salah", "L. Suárez", "G. Bale"
+    ];
+
+    let playersA = [];
+    let playersB = [];
+
+    // Maç Temel Durumları
+    let scoreA = 0;
+    let scoreB = 0;
+    let turnOwner = 'B'; // Başlangıç Alt Takım
+    
+    /* UX Durum Makinesi:
+       'READY_TO_SELECT' (Seçim başlatılacak)
+       'RUNNING_SELECT'  (Seçim için kronometre çalışıyor)
+       'SELECTED_SHOW'   (Seçilen oyuncu yerleşik panelde gösteriliyor)
+       'RUNNING_ACTION'  (Şut çekmek için kronometre çalışıyor)
+       'ACTION_SHOW'     (Şut çekildi, sonuç yerleşik panelde gösteriliyor)
+       'RUNNING_SPECIAL' (Korner/Penaltı için kronometre çalışıyor)
+       'SPECIAL_SHOW'    (Özel durum bitti, sonuç yerleşik panelde gösteriliyor)
+    */
+    let currentSubState = 'READY_TO_SELECT';
+
+    // 30 Saniye Rezerv Sistemi
+    let teamTimeReserve = { 'A': 30000, 'B': 30000 };
+    let teamTimesUp = { 'A': false, 'B': false };
+
+    // Zamanlayıcı Kontrolörleri
+    let stopwatchRunning = false;
+    let stopwatchStartTimestamp = 0;
+    let lastClockUpdateTimestamp = 0;
+    let animationFrameID = null;
+    let stopwatchValueMs = 0;
+
+    let selectedPlayerIndex = -1;
+    let actionDigitResult = -1;
+    let specialActionType = ''; // 'CORNER' or 'PENALTY'
+
+    const TIME_LIMIT_MS = 5000; // 5 Saniyelik bireysel durdurma limiti
+
+    // Ses Sentezleyicisi
+    class SoundFX {
+      constructor() { this.ctx = null; }
+      init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+      playWhistle() {
+        this.init(); if (!this.ctx) return;
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.type = 'sine'; osc.frequency.setValueAtTime(880, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1200, this.ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.2);
+      }
+      playTick() {
+        this.init(); if (!this.ctx) return;
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(1000, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.01, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.05);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.05);
+      }
+      playGoal() {
+        this.init(); if (!this.ctx) return;
+        this.playWhistle();
+        setTimeout(() => {
+          const bufferSize = this.ctx.sampleRate * 1.0;
+          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+          const noise = this.ctx.createBufferSource(); noise.buffer = buffer;
+          const filter = this.ctx.createBiquadFilter(); filter.type = 'bandpass'; filter.frequency.value = 450;
+          const gain = this.ctx.createGain(); gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.002, this.ctx.currentTime + 1.0);
+          noise.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
+          noise.start();
+        }, 120);
+      }
+      playMiss() {
+        this.init(); if (!this.ctx) return;
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(60, this.ctx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.06, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.3);
+      }
+    }
+    const sfx = new SoundFX();
+
+    window.onload = function() {
+      randomizePlayers('A');
+      randomizePlayers('B');
+    };
+
+    // Kadroları Lobiye Yerleştirme
+    function randomizePlayers(team) {
+      const parent = document.getElementById(team === 'A' ? 'teamAPlayerSetup' : 'teamBPlayerSetup');
+      parent.innerHTML = '';
+      const pool = team === 'A' ? [...poolLegends] : [...poolStars];
+      
+      const teamPlayers = [];
+      for (let i = 0; i < 10; i++) {
+        let name = pool[i] || `Oyuncu ${i}`;
+        teamPlayers.push({ 
+          index: i, 
+          name, 
+          yellowCards: 0, 
+          redCard: false, 
+          injured: false,
+          injuryCountdown: 0 
+        });
+
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded';
+        div.innerHTML = `
+          <span class="w-3.5 text-[10px] text-slate-500 font-bold text-center">${i}</span>
+          <input type="text" id="pName_${team}_${i}" value="${name}" class="bg-transparent text-white font-bold outline-none w-full text-xs border-b border-transparent focus:border-emerald-500 py-0.5 truncate">
+        `;
+        parent.appendChild(div);
+      }
+
+      if (team === 'A') playersA = teamPlayers;
+      else playersB = teamPlayers;
+    }
+
+    // Sıfırdan Oyunu Başlat
+    function startGame() {
+      // 1. Oyuncu İsimlerini Kaydet
+      for (let i = 0; i < 10; i++) {
+        const inputA = document.getElementById(`pName_A_${i}`);
+        if (inputA) playersA[i].name = inputA.value.trim() || `Oyuncu A${i}`;
+        
+        const inputB = document.getElementById(`pName_B_${i}`);
+        if (inputB) playersB[i].name = inputB.value.trim() || `Oyuncu B${i}`;
+      }
+
+      // 2. TÜM DURUMLARI TAM SIFIRLA
+      scoreA = 0;
+      scoreB = 0;
+      teamTimeReserve['A'] = 30000;
+      teamTimeReserve['B'] = 30000;
+      teamTimesUp['A'] = false;
+      teamTimesUp['B'] = false;
+
+      resetPlayerStates(playersA);
+      resetPlayerStates(playersB);
+
+      document.getElementById('lobbyScreen').classList.add('hidden');
+      
+      turnOwner = 'B'; // İlk atak alt takımın
+      currentSubState = 'READY_TO_SELECT';
+      
+      sfx.playWhistle();
+
+      updateScoreboardUI();
+      renderRosterGrids();
+      clearLogs();
+      
+      setTurnState('B');
+    }
+
+    // Tüm Oyuncu Durumlarını Sıfırla
+    function resetPlayerStates(playersList) {
+      playersList.forEach(p => {
+        p.yellowCards = 0;
+        p.redCard = false;
+        p.injured = false;
+        p.injuryCountdown = 0;
+      });
+    }
+
+    // Kadroları Sahada Çizme
+    function renderRosterGrids() {
+      renderSingleGrid('A', playersA);
+      renderSingleGrid('B', playersB);
+    }
+
+    function renderSingleGrid(team, players) {
+      const container = document.getElementById(`grid${team}`);
+      container.innerHTML = '';
+      
+      players.forEach(p => {
+        let statusStyles = "border-slate-800 bg-slate-900/40 text-slate-300";
+        let statusIcons = "";
+        
+        if (p.redCard) {
+          statusStyles = "border-rose-600 bg-rose-950/20 text-rose-500 line-through opacity-50";
+          statusIcons += "🔴";
+        } else if (p.injured) {
+          statusStyles = "border-amber-600 bg-amber-950/20 text-amber-500 opacity-70";
+          statusIcons += `🏥 (${p.injuryCountdown})`;
+        } else if (p.yellowCards === 1) {
+          statusIcons += "🟡";
+        }
+
+        const div = document.createElement('div');
+        div.className = `border rounded p-0.5 text-center flex flex-col justify-between h-8 ${statusStyles}`;
+        div.innerHTML = `
+          <div class="flex justify-between items-center px-0.5 leading-none">
+            <span class="font-bold text-[7px] text-slate-500">${p.index}</span>
+            <span class="text-[7px] font-semibold text-rose-400">${statusIcons}</span>
+          </div>
+          <p class="text-[8px] font-bold truncate">${p.name}</p>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // Skorbord Güncelleme
+    function updateScoreboardUI() {
+      document.getElementById('liveScoreA1').innerText = scoreA;
+      document.getElementById('liveScoreA2').innerText = scoreA;
+      document.getElementById('liveScoreB1').innerText = scoreB;
+      document.getElementById('liveScoreB2').innerText = scoreB;
+
+      updateMatchClocksDisplay();
+    }
+
+    function updateMatchClocksDisplay() {
+      const formatTime = (ms) => {
+        const secs = Math.floor(ms / 1000);
+        const hundredths = Math.floor((ms % 1000) / 10);
+        return `${String(secs).padStart(2, '0')}.${String(hundredths).padStart(2, '0')}s`;
+      };
+
+      document.getElementById('matchClockA').innerText = formatTime(teamTimeReserve['A']);
+      document.getElementById('matchClockB').innerText = formatTime(teamTimeReserve['B']);
+
+      // 10 Saniyenin altında tehlike alarmı
+      if (teamTimeReserve['A'] < 10000) {
+        document.getElementById('matchClockA').parentElement.classList.add('pulse-warning');
+      } else {
+        document.getElementById('matchClockA').parentElement.classList.remove('pulse-warning');
+      }
+
+      if (teamTimeReserve['B'] < 10000) {
+        document.getElementById('matchClockB').parentElement.classList.add('pulse-warning');
+      } else {
+        document.getElementById('matchClockB').parentElement.classList.remove('pulse-warning');
+      }
+    }
+
+    // Canlı Loglar (Küçük formatta)
+    function addLog(text) {
+      const logMsg = `<div class="py-0.5 border-b border-slate-850/60">${text}</div>`;
+      const tickerA = document.getElementById('liveTickerA');
+      const tickerB = document.getElementById('liveTickerB');
+
+      if (tickerA.querySelector('.text-center')) tickerA.innerHTML = '';
+      if (tickerB.querySelector('.text-center')) tickerB.innerHTML = '';
+
+      tickerA.insertAdjacentHTML('afterbegin', logMsg);
+      tickerB.insertAdjacentHTML('afterbegin', logMsg);
+    }
+
+    function clearLogs() {
+      document.getElementById('liveTickerA').innerHTML = '<div class="text-slate-500 text-center italic">Başladı!</div>';
+      document.getElementById('liveTickerB').innerHTML = '<div class="text-slate-500 text-center italic">Başladı!</div>';
+    }
+
+    // Sıra Değişimi Yönetimi
+    function setTurnState(owner) {
+      turnOwner = owner;
+      
+      // Aktiflik perdeleri
+      if (owner === 'A') {
+        document.getElementById('overlayA').classList.add('hidden');
+        document.getElementById('overlayB').classList.remove('hidden');
+      } else {
+        document.getElementById('overlayB').classList.add('hidden');
+        document.getElementById('overlayA').classList.remove('hidden');
+      }
+
+      updateAllUI();
+    }
+
+
+    // --- EVRİLEN TEK BUTON UX YÖNETİMİ ---
+    function updateAllUI() {
+      updateSingleScreenUI('A');
+      updateSingleScreenUI('B');
+      updateProgressBars(100);
+    }
+
+    function updateSingleScreenUI(team) {
+      const btn = document.getElementById(`btnAction${team}`);
+      const hudContent = document.getElementById(`hudContent${team}`);
+
+      // Sıra bu takımda değilse pasif yap
+      if (turnOwner !== team) {
+        btn.classList.add('opacity-45');
+        btn.innerText = "SIRA RAKİPTE";
+        return;
+      }
+
+      btn.classList.remove('opacity-45');
+
+      // State makinesine göre buton metnini ve HUD panelini güncelle
+      switch (currentSubState) {
+        case 'READY_TO_SELECT':
+          btn.innerText = "OYUNCU SEÇ (BAŞLAT) ⏱️";
+          hudContent.innerHTML = `
+            <div class="text-amber-400 font-bold text-sm">🎮 ATAK BAŞLIYOR</div>
+            <div class="text-[10px] text-slate-400">Salisenin son hanesiyle hücumcu seçmek için butona basın.</div>
+          `;
+          break;
+
+        case 'RUNNING_SELECT':
+          btn.innerText = "OYUNCU SEÇ (DURDUR) 🎯";
+          hudContent.innerHTML = `
+            <div class="text-rose-400 font-bold text-sm animate-pulse">⏰ KRONOMETRE ÇALIŞIYOR...</div>
+            <div class="text-[10px] text-slate-400">Hedef: Sağlıklı bir oyuncu numarası (0-9)</div>
+          `;
+          break;
+
+        case 'SELECTED_SHOW':
+          btn.innerText = "ŞUT ÇEK (BAŞLAT) 🔥";
+          const roster = (turnOwner === 'A') ? playersA : playersB;
+          const pickedPlayer = roster[selectedPlayerIndex];
+          hudContent.innerHTML = `
+            <div class="text-[10px] text-slate-500 font-bold">⏱️ SALİSE SON HANESİ: .[${selectedPlayerIndex}]</div>
+            <div class="text-emerald-400 font-extrabold text-sm">🏃 #${selectedPlayerIndex} ${pickedPlayer.name}</div>
+            <div class="text-[10px] text-slate-400">Şut çekip sonucu belirlemek için butona basın.</div>
+          `;
+          break;
+
+        case 'RUNNING_ACTION':
+          btn.innerText = "ŞUT ÇEK (DURDUR) ⚡";
+          hudContent.innerHTML = `
+            <div class="text-rose-400 font-bold text-sm animate-pulse">⏰ ŞUT İÇİN KRONOMETRE ÇALIŞIYOR...</div>
+            <div class="text-[10px] text-slate-400">0-9 arası bir aksiyon seçilecek.</div>
+          `;
+          break;
+
+        case 'ACTION_SHOW':
+          btn.innerText = "DEVAM ET ➔";
+          renderActionShowHUD(hudContent);
+          break;
+
+        case 'RUNNING_SPECIAL':
+          btn.innerText = `${specialActionType === 'CORNER' ? 'KORNER' : 'PENALTI'} (DURDUR) 🎯`;
+          hudContent.innerHTML = `
+            <div class="text-amber-400 font-bold text-sm animate-pulse">🔥 ${specialActionType === 'CORNER' ? 'KORNER' : 'PENALTI'} KULLANILIYOR...</div>
+            <div class="text-[10px] text-slate-400">Sonucu durdurarak belirle! (3 İhtimal)</div>
+          `;
+          break;
+
+        case 'SPECIAL_SHOW':
+          btn.innerText = "DEVAM ET ➔";
+          renderSpecialShowHUD(hudContent);
+          break;
+      }
+    }
+
+    // Yerleşik Şut Sonuç HUD Tasarımı
+    function renderActionShowHUD(container) {
+      const pIndex = selectedPlayerIndex;
+      const roster = (turnOwner === 'A') ? playersA : playersB;
+      const player = roster[pIndex];
+      
+      let actionName = "";
+      let emoji = "⚽";
+      let colorClass = "text-white";
+
+      switch (actionDigitResult) {
+        case 0: emoji = "⚽ GOL!"; colorClass = "text-emerald-400 font-black"; break;
+        case 1: emoji = "🥅 DİREK!"; colorClass = "text-amber-400"; break;
+        case 2: emoji = "🚩 OFSAYT"; colorClass = "text-slate-400"; break;
+        case 3: emoji = "📐 KORNER"; colorClass = "text-sky-400"; break;
+        case 4: emoji = "🤦 KENDİ KALESİNE GOL!"; colorClass = "text-rose-400"; break;
+        case 5: emoji = "🎯 PENALTI"; colorClass = "text-cyan-400"; break;
+        case 6: emoji = "🟥 KIRMIZI KART"; colorClass = "text-red-500 font-bold"; break;
+        case 7:
+        case 8: emoji = "🟨 SARI KART"; colorClass = "text-yellow-400"; break;
+        case 9: emoji = "🏥 SAKATLIK"; colorClass = "text-orange-400"; break;
+      }
+
+      container.innerHTML = `
+        <div class="text-[10px] text-slate-500 font-bold">⏱️ SALİSE SON HANESİ: .[${actionDigitResult}]</div>
+        <div class="text-xs text-slate-300">🏃 #${pIndex} ${player.name}</div>
+        <div class="text-base font-black ${colorClass} tracking-wide mt-1">${emoji}</div>
+      `;
+    }
+
+    // Yerleşik Köşe Vuruşu / Penaltı Sonuç HUD Tasarımı
+    function renderSpecialShowHUD(container) {
+      const outcome = actionDigitResult % 3;
+      let finalResultStr = "";
+      let colorClass = "text-white";
+
+      if (specialActionType === 'CORNER') {
+        if (outcome === 0) {
+          finalResultStr = "📐 KORNER (TEKRAR)";
+          colorClass = "text-sky-400";
+        } else if (outcome === 1) {
+          finalResultStr = "⚽ GOL! (KAFAYLA)";
+          colorClass = "text-emerald-400 font-black";
+        } else {
+          finalResultStr = "❌ AUT";
+          colorClass = "text-slate-400";
+        }
+      } else { // PENALTY
+        if (outcome === 0) {
+          finalResultStr = "⚽ PENALTI GOLÜ!";
+          colorClass = "text-emerald-400 font-black";
+        } else if (outcome === 1) {
+          finalResultStr = "🥅 DİREKTEN DÖNDÜ";
+          colorClass = "text-amber-400";
+        } else {
+          finalResultStr = "💨 DIŞARI (AUT)";
+          colorClass = "text-slate-400";
+        }
+      }
+
+      container.innerHTML = `
+        <div class="text-[10px] text-slate-500 font-bold">⏱️ SON HANE: .[${actionDigitResult}] (Mod 3 = ${outcome})</div>
+        <div class="text-[10px] text-amber-400 uppercase tracking-wider">${specialActionType === 'CORNER' ? '📐 KÖŞE VURUŞU' : '🎯 PENALTI'} SONUCU</div>
+        <div class="text-base font-black ${colorClass} tracking-wider mt-1">${finalResultStr}</div>
+      `;
+    }
+
+    function updateProgressBars(percent) {
+      document.getElementById('progressBarA').style.width = `${percent}%`;
+      document.getElementById('progressBarB').style.width = `${percent}%`;
+    }
+
+
+    // --- KRONOMETRE & REZERV HESAPLAMA MOTORU ---
+    function updateStopwatch() {
+      if (!stopwatchRunning) return;
+
+      const now = performance.now();
+      const elapsed = now - stopwatchStartTimestamp;
+      const deltaTime = now - lastClockUpdateTimestamp;
+      lastClockUpdateTimestamp = now;
+
+      // Hücum yapan takımın 30s rezerv süresini düş
+      teamTimeReserve[turnOwner] = Math.max(0, teamTimeReserve[turnOwner] - deltaTime);
+      updateMatchClocksDisplay();
+
+      // Takımın 30 saniyelik ana süresi tamamen bitti mi?
+      if (teamTimeReserve[turnOwner] <= 0) {
+        teamTimeReserve[turnOwner] = 0;
+        stopStopwatchOnly();
+        handleTeamTimeOut();
+        return;
+      }
+
+      // 5 saniye içinde durdurma limitini geçti mi?
+      if (elapsed >= TIME_LIMIT_MS) {
+        stopwatchValueMs = TIME_LIMIT_MS;
+        renderStopwatchDisplay(TIME_LIMIT_MS);
+        stopStopwatchOnly();
+        handleActionTimeout();
+        return;
+      }
+
+      stopwatchValueMs = elapsed;
+      renderStopwatchDisplay(elapsed);
+
+      // Kalan 5s görsel geri sayım barı
+      const remainingPercent = ((TIME_LIMIT_MS - elapsed) / TIME_LIMIT_MS) * 100;
+      updateProgressBars(remainingPercent);
+
+      animationFrameID = requestAnimationFrame(updateStopwatch);
+    }
+
+    function renderStopwatchDisplay(ms) {
+      const totalSec = Math.floor(ms / 1000);
+      const centiSec = Math.floor((ms % 1000) / 10);
+
+      document.getElementById(`sec${turnOwner}`).innerText = String(totalSec).padStart(2, '0');
+      document.getElementById(`csec${turnOwner}`).innerText = String(centiSec).padStart(2, '0');
+    }
+
+    // 30 Saniye Rezerv Süresi Dolma Durumu
+    function handleTeamTimeOut() {
+      sfx.playMiss();
+      teamTimesUp[turnOwner] = true;
+      const teamName = (turnOwner === 'A') ? 'ÜST' : 'ALT';
+      
+      addLog(`⌛ ${teamName} SÜRESİ BİTTİ!`);
+      
+      // HUD panelinde doğrudan hata göster ve turu bitir
+      const hudContent = document.getElementById(`hudContent${turnOwner}`);
+      hudContent.innerHTML = `
+        <div class="text-red-500 font-bold text-sm">⌛ 30S SÜRE TÜKENDİ!</div>
+        <div class="text-[10px] text-slate-400">Bu maçta artık atak hakkınız kalmadı.</div>
+      `;
+
+      currentSubState = 'ACTION_SHOW'; // 'DEVAM ET ➔' evrilmesine olanak tanıyalım
+      updateAllUI();
+    }
+
+    // 5 Saniye Hamle Limiti Aşılma Durumu
+    function handleActionTimeout() {
+      sfx.playMiss();
+      const teamLabel = (turnOwner === 'A') ? 'ÜST' : 'ALT';
+      addLog(`⌛ ${teamLabel} 5sn GEÇTİ (Atak Başarısız)`);
+
+      const hudContent = document.getElementById(`hudContent${turnOwner}`);
+      hudContent.innerHTML = `
+        <div class="text-rose-500 font-bold text-sm">⏱️ 5 SANİYE DOLDU!</div>
+        <div class="text-[10px] text-slate-400">Zamanında durduramadınız. Atak hakkı kaybedildi.</div>
+      `;
+
+      // Hatalı aksiyonu sonlandırıp devam et butonuna geçiriyoruz
+      currentSubState = 'ACTION_SHOW';
+      actionDigitResult = -1; // Geçersiz kıl
+      updateAllUI();
+    }
+
+    function startStopwatchOnly() {
+      sfx.playTick();
+      stopwatchRunning = true;
+      stopwatchStartTimestamp = performance.now();
+      lastClockUpdateTimestamp = performance.now();
+      animationFrameID = requestAnimationFrame(updateStopwatch);
+    }
+
+    function stopStopwatchOnly() {
+      stopwatchRunning = false;
+      if (animationFrameID) cancelAnimationFrame(animationFrameID);
+    }
+
+
+    // --- TEK BİR BUTONA BASILDIĞINDA (UNIFIED ACTION HANDLER) ---
+    function onUnifiedBtnClick(team) {
+      if (turnOwner !== team) return;
+      if (teamTimesUp[team]) return;
+
+      switch (currentSubState) {
+        case 'READY_TO_SELECT':
+          // Sakatlık Geri Sayımını Azalt (Kendi atağının başında!)
+          decrementInjuryCountdowns(team);
+          
+          startStopwatchOnly();
+          currentSubState = 'RUNNING_SELECT';
+          updateAllUI();
+          break;
+
+        case 'RUNNING_SELECT':
+          stopStopwatchOnly();
+          processSelection();
+          break;
+
+        case 'SELECTED_SHOW':
+          startStopwatchOnly();
+          currentSubState = 'RUNNING_ACTION';
+          updateAllUI();
+          break;
+
+        case 'RUNNING_ACTION':
+          stopStopwatchOnly();
+          processAction();
+          break;
+
+        case 'ACTION_SHOW':
+          // Eğer özel aksiyon (Korner/Penaltı) tetiklenmediyse turu değiştir
+          if (actionDigitResult === 3) { // KORNER
+            specialActionType = 'CORNER';
+            currentSubState = 'RUNNING_SPECIAL';
+            startStopwatchOnly();
+            updateAllUI();
+          } else if (actionDigitResult === 5) { // PENALTI
+            specialActionType = 'PENALTY';
+            currentSubState = 'RUNNING_SPECIAL';
+            startStopwatchOnly();
+            updateAllUI();
+          } else {
+            currentSubState = 'READY_TO_SELECT';
+            switchTurn();
+          }
+          break;
+
+        case 'RUNNING_SPECIAL':
+          stopStopwatchOnly();
+          processSpecial();
+          break;
+
+        case 'SPECIAL_SHOW':
+          // Eğer tekrar korner çıktıysa bir kez daha çalıştırmaya izin ver
+          if (specialActionType === 'CORNER' && (actionDigitResult % 3 === 0)) {
+            // Tekrar korner durumunda 'ACTION_SHOW' gibi davranacağız ama state 'RUNNING_SPECIAL' kalacak
+            specialActionType = 'CORNER';
+            currentSubState = 'RUNNING_SPECIAL';
+            startStopwatchOnly();
+            updateAllUI();
+          } else {
+            currentSubState = 'READY_TO_SELECT';
+            switchTurn();
+          }
+          break;
+      }
+    }
+
+
+    // --- SAKATLIK AZALTIM MEKANİZMASI ---
+    function decrementInjuryCountdowns(team) {
+      const roster = (team === 'A') ? playersA : playersB;
+      roster.forEach(p => {
+        if (p.injured) {
+          p.injuryCountdown--;
+          if (p.injuryCountdown <= 0) {
+            p.injured = false;
+            p.injuryCountdown = 0;
+            addLog(`🩹 #${p.index} ${p.name} İYİLEŞTİ!`);
+          }
+        }
+      });
+      renderRosterGrids();
+    }
+
+
+    // --- OYUNCU SEÇİMİNİN İŞLENMESİ ---
+    function processSelection() {
+      const centiSec = Math.floor((stopwatchValueMs % 1000) / 10);
+      selectedPlayerIndex = centiSec % 10; // Salisenin son hanesi (0-9)
+
+      const roster = (turnOwner === 'A') ? playersA : playersB;
+      const player = roster[selectedPlayerIndex];
+      const teamLabel = (turnOwner === 'A') ? 'ÜST' : 'ALT';
+
+      // Sakat mı cezalı mı kontrolü
+      if (player.redCard) {
+        sfx.playMiss();
+        addLog(`🛑 #${selectedPlayerIndex} ${player.name} CEZALI (Atak Söndü)`);
+        document.getElementById(`hudContent${turnOwner}`).innerHTML = `
+          <div class="text-rose-600 font-bold text-sm">🟥 CEZALI OYUNCU!</div>
+          <div class="text-xs text-slate-400">#${selectedPlayerIndex} ${player.name} cezalı olduğu için atak yapılamadı.</div>
+        `;
+        currentSubState = 'ACTION_SHOW';
+        actionDigitResult = -1; // Geçersiz hamle
+        updateAllUI();
+        return;
+      }
+
+      if (player.injured) {
+        sfx.playMiss();
+        addLog(`🏥 #${selectedPlayerIndex} ${player.name} SAKAT (Atak Söndü)`);
+        document.getElementById(`hudContent${turnOwner}`).innerHTML = `
+          <div class="text-amber-500 font-bold text-sm">🏥 SAKAT OYUNCU!</div>
+          <div class="text-xs text-slate-400">#${selectedPlayerIndex} ${player.name} sakat olduğu için atak yarıda kaldı.</div>
+        `;
+        currentSubState = 'ACTION_SHOW';
+        actionDigitResult = -1; // Geçersiz hamle
+        updateAllUI();
+        return;
+      }
+
+      // Başarılı oyuncu seçimi
+      sfx.playWhistle();
+      addLog(`🏃 #${selectedPlayerIndex} ${player.name} SEÇİLDİ (.${centiSec}s)`);
+      currentSubState = 'SELECTED_SHOW';
+      updateAllUI();
+    }
+
+
+    // --- ANA AKSİYON SONUCUNUN İŞLENMESİ ---
+    function processAction() {
+      const centiSec = Math.floor((stopwatchValueMs % 1000) / 10);
+      actionDigitResult = centiSec % 10; 
+
+      const roster = (turnOwner === 'A') ? playersA : playersB;
+      const player = roster[selectedPlayerIndex];
+      const teamLabel = (turnOwner === 'A') ? 'ÜST' : 'ALT';
+
+      /* İhtimaller:
+         0 gol, 1 direkten döndü, 2 ofsayt, 3 korner, 4 kendi kalesine gol, 5 penaltı, 6 kırmızı kart, 7 sarı kart, 8 sarı kart, 9 sakatlık */
+
+      sfx.playWhistle();
+
+      switch (actionDigitResult) {
+        case 0: // GOL
+          sfx.playGoal();
+          if (turnOwner === 'A') scoreA++; else scoreB++;
+          addLog(`⚽ GOL! [.${centiSec}s] #${selectedPlayerIndex} ${player.name}`);
+          break;
+
+        case 1: // DİREK
+          sfx.playMiss();
+          addLog(`🥅 DİREK! [.${centiSec}s] #${selectedPlayerIndex} ${player.name}`);
+          break;
+
+        case 2: // OFSAYT
+          sfx.playMiss();
+          addLog(`🚩 OFSAYT! [.${centiSec}s] #${selectedPlayerIndex} ${player.name}`);
+          break;
+
+        case 3: // KORNER
+          addLog(`📐 KORNER! [.${centiSec}s] #${selectedPlayerIndex} ${player.name}`);
+          break;
+
+        case 4: // KENDİ KALESİNE GOL
+          sfx.playGoal();
+          if (turnOwner === 'A') scoreB++; else scoreA++; // Rakibe yazılır
+          addLog(`🤦 K.KALESİNE GOL! [.${centiSec}s] #${selectedPlayerIndex} ${player.name}`);
+          break;
+
+        case 5: // PENALTI
+          addLog(`🎯 PENALTI! [.${centiSec}s] #${selectedPlayerIndex} ${player.name}`);
+          break;
+
+        case 6: // KIRMIZI KART
+          player.redCard = true;
+          addLog(`🟥 KIRMIZI KART! [.${centiSec}s] #${selectedPlayerIndex} ${player.name}`);
+          renderRosterGrids();
+          checkForfeit(turnOwner);
+          break;
+
+        case 7:
+        case 8: // SARI KART
+          player.yellowCards++;
+          if (player.yellowCards >= 2) {
+            player.redCard = true;
+            addLog(`🟥 2.SARI ➔ KIRMIZI! #${selectedPlayerIndex} ${player.name}`);
+          } else {
+            addLog(`🟨 SARI KART! [.${centiSec}s] #${selectedPlayerIndex} ${player.name}`);
+          }
+          renderRosterGrids();
+          checkForfeit(turnOwner);
+          break;
+
+        case 9: // SAKATLIK (4 Atak Sonra İyileşecek)
+          player.injured = true;
+          player.injuryCountdown = 4; // 4 Atak sürecek
+          addLog(`🏥 SAKATLIK (4 Atak Yok) #${selectedPlayerIndex} ${player.name}`);
+          renderRosterGrids();
+          break;
+      }
+
+      currentSubState = 'ACTION_SHOW';
+      updateScoreboardUI();
+      updateAllUI();
+    }
+
+
+    // --- ÖZEL AKSİYONLARIN İŞLENMESİ (KORNER / PENALTI) ---
+    function processSpecial() {
+      const centiSec = Math.floor((stopwatchValueMs % 1000) / 10);
+      actionDigitResult = centiSec % 10; // Son haneye göre 3 ihtimal
+      const outcome = actionDigitResult % 3;
+
+      sfx.playWhistle();
+
+      if (specialActionType === 'CORNER') {
+        if (outcome === 0) {
+          addLog(`📐 KORNER TEKRAR! [.${centiSec}s]`);
+        } else if (outcome === 1) {
+          sfx.playGoal();
+          if (turnOwner === 'A') scoreA++; else scoreB++;
+          addLog(`⚽ KORNER GOLÜ! [.${centiSec}s]`);
+        } else {
+          sfx.playMiss();
+          addLog(`❌ KORNER AUT! [.${centiSec}s]`);
+        }
+      } else { // PENALTY
+        if (outcome === 0) {
+          sfx.playGoal();
+          if (turnOwner === 'A') scoreA++; else scoreB++;
+          addLog(`⚽ PENALTI GOLÜ! [.${centiSec}s]`);
+        } else if (outcome === 1) {
+          sfx.playMiss();
+          addLog(`🥅 PENALTI DİREK! [.${centiSec}s]`);
+        } else {
+          sfx.playMiss();
+          addLog(`❌ PENALTI AUT! [.${centiSec}s]`);
+        }
+      }
+
+      currentSubState = 'SPECIAL_SHOW';
+      updateScoreboardUI();
+      updateAllUI();
+    }
+
+
+    // --- HÜKMEN YENİLGİ KONTROLÜ (4 KIRMIZI KART) ---
+    function checkForfeit(team) {
+      const roster = (team === 'A') ? playersA : playersB;
+      const redCount = roster.filter(p => p.redCard).length;
+      
+      if (redCount >= 4) {
+        currentSubState = 'GAME_OVER';
+        sfx.playMiss();
+        
+        if (team === 'A') {
+          scoreA = 0; scoreB = Math.max(scoreB, 3);
+          document.getElementById('gameResultStatus').innerText = "ALT TAKIM KAZANDI 🏆";
+          document.getElementById('reasonText').innerText = "Üst Takım 4 kırmızı kart alarak kurallar gereği hükmen (3-0) yenildi.";
+        } else {
+          scoreB = 0; scoreA = Math.max(scoreA, 3);
+          document.getElementById('gameResultStatus').innerText = "ÜST TAKIM KAZANDI 🏆";
+          document.getElementById('reasonText').innerText = "Alt Takım 4 kırmızı kart alarak kurallar gereği hükmen (3-0) yenildi.";
+        }
+        
+        showGameOverScreen();
+        return true;
+      }
+      return false;
+    }
+
+
+    // --- SIRA DEĞİŞTİRME MEKANİZMASI ---
+    function switchTurn() {
+      if (currentSubState === 'GAME_OVER') return;
+
+      // İki takımın da süresi tamamen bitti mi?
+      if (teamTimesUp['A'] && teamTimesUp['B']) {
+        endGameNormal();
+        return;
+      }
+
+      let nextOwner = (turnOwner === 'A') ? 'B' : 'A';
+
+      // Sıradaki takımın süresi bittiyse hakkı tekrar diğerine ver
+      if (teamTimesUp[nextOwner]) {
+        nextOwner = turnOwner;
+        if (teamTimesUp[nextOwner]) {
+          endGameNormal();
+          return;
+        }
+      }
+
+      setTurnState(nextOwner);
+    }
+
+    // Normal Süre Bitişi
+    function endGameNormal() {
+      currentSubState = 'GAME_OVER';
+      sfx.playWhistle();
+
+      if (scoreA > scoreB) {
+        document.getElementById('gameResultStatus').innerText = "ÜST TAKIM KAZANDI 🏆";
+        document.getElementById('reasonText').innerText = "Süre havuzları bitti. Üst Takım üstünlüğüyle maç tamamlandı.";
+      } else if (scoreB > scoreA) {
+        document.getElementById('gameResultStatus').innerText = "ALT TAKIM KAZANDI 🏆";
+        document.getElementById('reasonText').innerText = "Süre havuzları bitti. Alt Takım üstünlüğüyle maç tamamlandı.";
+      } else {
+        document.getElementById('gameResultStatus').innerText = "BERABERLİK 🤝";
+        document.getElementById('reasonText').innerText = "İki takımın da zamanı tükendi ve skor dengesi bozulmadı.";
+      }
+
+      showGameOverScreen();
+    }
+
+    function showGameOverScreen() {
+      document.getElementById('finalScoreA').innerText = scoreA;
+      document.getElementById('finalScoreB').innerText = scoreB;
+      document.getElementById('gameOverScreen').classList.remove('hidden');
+    }
+
+    function resetGame() {
+      document.getElementById('gameOverScreen').classList.add('hidden');
+      document.getElementById('lobbyScreen').classList.remove('hidden');
+      currentSubState = 'READY_TO_SELECT';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+{
+  "version": "2.0.0",
+  "updated_at": "2026-08-05T00:00:00Z",
+  "_not": "Bu dosya uygulamanın kural kitabıdır. GitHub'a (futgol-project/config) yüklendiğinde uygulama sürüm numarası daha yeniyse otomatik olarak çeker. Uygulama içindeki varsayılan kopya DifficultyRulesService._defaultRules ile birebir aynıdır.",
+
+  "_league_scores_note": "Tanınırlık skoru veritabanı üzerinde ölçüldü: skor = (50M+ oyuncu sayısı x 3) + (20M+ oyuncu sayısı) + (5 büyük lige geçiş yüzdesi x 2) + (medyan değer M€ x 4). Tahmin değildir.",
+  "league_scores": {
+    "GB1": 1670, "ES1": 1072, "IT1": 1017, "FR1": 877, "L1": 856,
+    "PO1": 328, "NL1": 298, "TR1": 295, "BE1": 209,
+    "C1": 127, "ARG1": 123, "GR1": 116, "A1": 103, "SA1": 100,
+    "RU1": 94, "MLS1": 92, "KR1": 90, "BRA1": 90, "DK1": 87, "SC1": 85,
+    "SE1": 78, "UKR1": 61, "PL1": 60, "SER1": 56, "NO1": 53, "MEX1": 51,
+    "JAP1": 44, "TS1": 44, "RO1": 33, "RSK1": 0, "AUS1": 0, "COL1": 0
+  },
+
+  "_league_tiers_note": "KR1 = Hırvatistan ligidir, Kore değil (Kore = RSK1). Eski v1 kural kitabı bunu yanlış sınıflandırıyordu.",
+  "league_tiers": {
+    "elit": ["GB1", "ES1", "IT1", "L1", "FR1"],
+    "ust": ["PO1", "NL1", "TR1", "BE1"],
+    "orta": ["C1", "ARG1", "GR1", "A1", "SA1", "RU1", "MLS1", "KR1", "BRA1", "DK1", "SC1"],
+    "uzak": ["SE1", "UKR1", "PL1", "SER1", "NO1", "MEX1", "JAP1", "TS1", "RO1", "RSK1", "AUS1", "COL1"]
+  },
+
+  "_local_note": "Süper Lig'in ölçülen skoru 295 (üst kademe) ancak Türkiye'deki kullanıcı için elit ligler kadar tanıdıktır. Bu yüzden Kolay modda ayrıca açılır.",
+  "local_leagues": ["TR1"],
+
+  "difficulties": {
+    "easy": {
+      "display_name": "Kolay",
+      "title": "Er",
+      "icon": "🟢",
+      "min_highest_market_value": 40000000,
+      "max_highest_market_value": null,
+      "exposure_tiers": ["elit", "local"],
+      "description": "5 büyük lig ve Süper Lig'de forma giymiş, kariyer zirve değeri 40M€ üzerindeki yıldızlar. Messi, Ronaldo, Neymar gibi bugün MLS veya Suudi Arabistan'da oynayan efsaneler de dahil."
+    },
+    "medium": {
+      "display_name": "Orta",
+      "title": "Teğmen",
+      "icon": "🟡",
+      "min_highest_market_value": 12000000,
+      "max_highest_market_value": 60000000,
+      "exposure_tiers": ["elit", "ust", "orta"],
+      "description": "Zirve değeri 12M€–60M€ arasında, Avrupa'nın tanınan liglerinde oynamış futbolcular. Bilirsiniz ama bir an düşünmeniz gerekir."
+    },
+    "hard": {
+      "display_name": "Zor",
+      "title": "Binbaşı",
+      "icon": "🔴",
+      "min_highest_market_value": 4000000,
+      "max_highest_market_value": 20000000,
+      "exposure_tiers": ["elit", "ust", "orta", "uzak"],
+      "description": "Zirve değeri 4M€–20M€ arasında, dünyanın her liginden geniş havuz. Sıkı futbol takipçileri için."
+    },
+    "veteran": {
+      "display_name": "Efsaneler",
+      "title": "General",
+      "icon": "👑",
+      "min_highest_market_value": 20000000,
+      "max_highest_market_value": null,
+      "exposure_tiers": ["elit", "ust", "orta", "uzak"],
+      "max_last_season": 2021,
+      "description": "Nostalji modu: kariyeri 2021 ve öncesinde tamamlanmış büyük isimler. Xavi, Totti, Drogba, Kaká, Pirlo, Casillas, Agüero…"
+    }
+  }
+}

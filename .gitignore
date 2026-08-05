@@ -1,0 +1,75 @@
+# ---------------------------------------------------------------
+# Veri kümesi — GitHub Releases üzerinden dağıtılır, depoya girmez
+# (futgol.db 875 MB, futgol.db.zip 329 MB)
+# İndirme adresi: releases/download/ds/futgol.db.zip
+# ---------------------------------------------------------------
+*.db
+*.db-shm
+*.db-wal
+*.db.zip
+futgol_arsiv/dataset/futgol.db*
+futgol_arsiv/dataset/players/
+futgol_arsiv/dataset/international_dataset/
+
+# ---------------------------------------------------------------
+# Flutter / Dart
+# ---------------------------------------------------------------
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/.pub-cache/
+**/.pub/
+**/generated_plugin_registrant.dart
+**/doc/api/
+**/coverage/
+app.*.symbols
+app.*.map.json
+
+# ---------------------------------------------------------------
+# Android / Gradle
+# ---------------------------------------------------------------
+**/.gradle/
+**/android/.gradle/
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+**/android/key.properties
+*.keystore
+*.jks
+
+# ---------------------------------------------------------------
+# iOS / macOS
+# ---------------------------------------------------------------
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/App.framework/
+**/ios/Flutter/Flutter.framework/
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/ephemeral/
+**/ios/Pods/
+**/Podfile.lock
+**/xcuserdata/
+
+# ---------------------------------------------------------------
+# IDE / işletim sistemi
+# ---------------------------------------------------------------
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+Thumbs.db
+
+# ---------------------------------------------------------------
+# Diğer
+# ---------------------------------------------------------------
+*.log
+*.pyc
+__pycache__/
+migrate_working_dir/
