@@ -128,3 +128,56 @@ Tüm sorgular 875 MB'lık gerçek `futgol.db` üzerinde ölçüldü ve doğrulan
 - [x] `flutter analyze`: **36 uyarıdan 0'a** (`withOpacity` → `withValues`, `print` → `debugPrint`, eksik `path` bağımlılığı, async-gap `BuildContext` kullanımı vb.).
 - [x] Şablondan kalma ve zaten kırık olan sayaç testi kaldırıldı; yerine **21 anlamlı test** yazıldı (aksan eşleşmesi, kadro durumu, aksiyon kartı tipografisi, sıra göstergesi).
 - [x] `flutter build apk --debug` başarılı.
+
+---
+
+### Faz 11: Zorluk Sisteminin Veriye Dayalı Yeniden Tasarımı (v2)
+
+Tüm ölçümler 875 MB'lık gerçek `futgol.db` üzerinde yapıldı.
+
+#### 11.1 Tespit edilen tasarım hataları
+- [x] **Kolay mod en ünlü futbolcuları dışlıyordu.** Filtre `current_club_domestic_competition_id` kullanıyordu — yani oyuncunun BUGÜNKÜ kulübünün ligi. Messi (Inter Miami/MLS1), Cristiano Ronaldo (Al-Nassr/SA1), Neymar (Santos/BRA1), Luis Suárez, Thomas Müller, Sergio Busquets, Marcelo, Heung-min Son bu yüzden Kolay moda hiç girmiyordu. 30M€+ oyuncuların **%20'si** eleniyordu ve elenenler tam da en tanınan isimlerdi.
+- [x] **"Veteran" modu tam tersini yapıyordu.** `max_highest_market_value: 2M` kuralı **en düşük** değerli 38.494 oyuncuyu seçiyordu (Demba N'Diaye, Lwin Moe Aung…). Adı "Veteran/General 👑" olmasına rağmen içerik tahmin edilmesi imkânsız isimlerdi; oynanabilir bir mod değildi.
+- [x] **Lig kademeleri ölçülmemiş, tahmin edilmişti.** Süper Lig, Premier Lig ile aynı kutudaydı (ölçülen skor 295 vs 1670). Buna karşılık Rusya ve Ukrayna ligleri "Orta" seviyedeydi — oysa bu iki ligin oyuncularının 5 büyük lige geçiş oranı **%12** ve **%5,8** ile tüm ligler arasında en düşük ikisidir.
+- [x] **`KR1` kodu yanlış sınıflandırılmıştı.** `KR1` Hırvatistan ligidir (Kore `RSK1`); eski kural kitabı Kore sanıp 3. kademeye koymuştu.
+- [x] **Bantlar iç içeydi.** "Orta" için üst sınır yoktu; `>=10M` kuralı Messi'yi de kapsıyordu. Kullanıcı "Orta" seçtiğinde "Kolay" sorusu alabiliyordu.
+- [x] **Kural senkronizasyonu hiç çalışmıyordu.** URL var olmayan `futgol-project/config` deposunu gösteriyordu; her istek sessizce başarısız oluyordu.
+- [x] **Eski önbellek yeni kuralları eziyordu.** `initialize()` cihazdaki JSON'u koşulsuz yüklüyordu; uygulama güncellense bile kullanıcı düzeltilmiş kurallara asla geçemiyordu.
+- [x] **`getRandomPlayerWithCareer` `initialize()` çağırmıyordu** — kural kitabı yüklenmeden okunuyordu.
+
+#### 11.2 Lig tanınırlık ölçümü
+- [x] 32 lig için metrik çıkarıldı: 50M€+ / 20M€+ oyuncu sayısı, medyan değer, 5 büyük lige geçiş oranı, kulüp gücü. Betik: `tools/measure_league_difficulty.py`.
+- [x] Tanınırlık skoru: `(50M+ × 3) + (20M+) + (BIG5 geçiş % × 2) + (medyan M€ × 4)`.
+- [x] Ölçülen kademeler: **elit** GB1·ES1·IT1·L1·FR1 (856–1670) → **üst** PO1·NL1·TR1·BE1 (209–328) → **orta** C1·ARG1·GR1·A1·SA1·RU1·MLS1·KR1·BRA1·DK1·SC1 (85–127) → **uzak** SE1·UKR1·PL1·SER1·NO1·MEX1·JAP1·TS1·RO1·RSK1·AUS1·COL1 (<80).
+- [x] Süper Lig için `local_leagues` istisnası: ölçülen skoru "üst" kademe olsa da Türkiye'deki kullanıcı için elit ligler kadar tanıdıktır, Kolay modda ayrıca açılır.
+
+#### 11.3 Kariyer ligi verisi (yeni altyapı)
+- [x] **Doğru kaynak bulundu.** `players.current_club_domestic_competition_id` ve `player_valuations.player_club_domestic_competition_id` alanlarının **ikisi de** yalnızca güncel kulübü tutar — Messi'nin kariyeri bu alanlara göre sadece "MLS1"dir. Doğru kaynak `appearances` × `clubs` birleşimidir (doğrulandı: Messi → ES1, FR1, MLS1 · Ronaldo → ES1, GB1, IT1).
+- [x] Bu bilgi çalışma anında çıkarılınca sorgu başına **~700 ms** tutuyordu. Derleme zamanına alındı: `tools/gen_player_leagues_asset.py` → `assets/data/player_leagues.csv` (14.081 futbolcu, 32 bitlik lig maskesi, **157 KB**).
+- [x] `LeagueIntelligence` servisi asset'i tek seferde yüklüyor (~30 ms) ve `matchesExposure()` ile 0 ms'de yanıt veriyor.
+
+#### 11.4 Yeni zorluk modeli
+- [x] Üç eksen: **değer bandı** (alt+üst) · **kariyer ligi tanınırlığı** · **dönem** (`last_season`).
+- [x] Yeni seviyeler: Kolay 40M€+ elit/Süper Lig · Orta 12–60M€ elit+üst+orta · Zor 4–20M€ tüm ligler · **Efsaneler** 20M€+ & son sezon ≤2021.
+- [x] "Efsaneler" gerçek nostalji modu oldu: Xavi, Totti, Drogba, Kaká, Pirlo, Casillas, Agüero, Beckham, Giggs (185 futbolcu).
+- [x] **İki aşamalı seçim motoru** (`pickPlayerForDifficulty`): SQL yalnızca ucuz alanlarla (değer + dönem) 48'lik aday yığını çeker (~5 ms), lig tanınırlığı Dart tarafında önceden hesaplanmış maskeyle uygulanır. Doğru semantik + hızlı sorgu.
+- [x] Cevap havuzları da zorluğa göre süzülüyor (`filterByDifficulty`) — Kolay oyunda cevabın da tanınabilir olması gerekir.
+- [x] Zorluk artık **tüm oyunlara** uygulanıyor: Kariyer Yolu, Ortak Bağ (oyuncu+kulüp), Piyasa Değeri (ikisi), Kart Kralı, Zirve İstatistik, Koleksiyoncu Grid, Gizemli 11, Maç Dedektifi, Stadyum Atlası, Transfer Düellosu, Transfer Köprüsü. Önceden birçoğu zorluğu hiç dikkate almıyordu.
+- [x] Arayüz açıklamaları kural kitabından üretiliyor; eşik değiştiğinde metin de değişiyor (eskiden "30M€+" yazarken kural farklıydı).
+
+#### 11.5 Doğrulama
+- [x] **13 oyun × 4 zorluk = 52 kombinasyon, tamamı geçti** (8/8 deneme), soru başına ~5 ms.
+- [x] Değer bantları ayrıştı: Kolay medyan 50M€ · Orta 22M€ · Zor 7M€ · Efsaneler 28,5M€.
+- [x] Kolay modun 60 örneğinin **%100'ü** 5 büyük lig veya Süper Lig'de oynamış.
+- [x] Messi, Ronaldo, Neymar, Müller, Busquets, Marcelo, Özil, Icardi, Arda Güler → **hepsi artık Kolay modda**.
+- [x] "Kolay gibi görünen ama olmayan" tuzağı kapandı: 40M€+ olup yalnızca Portekiz/Hollanda liginde oynamış 9 futbolcu (Diogo Costa, Gonçalo Inácio, Hulk, Joey Veerman, Rodrigo Mora…) artık Kolay moda sızmıyor.
+- [x] 38 SQL sorgusu şemaya karşı doğrulandı, 0 hata.
+
+#### 11.6 Ek düzeltmeler
+- [x] `generateDynamicTeamQuestion`: `appearances` kayıtlarındaki bazı oyuncular `players` tablosunda bulunmadığı için kulüp çiftinin kesişimi boş kalabiliyordu (5 denemenin 1-2'si). Hem aday kulüpler hem de çekirdek kulüp için deneme döngüsü eklendi → 8/8.
+- [x] Kural senkronizasyon adresi bu depoya yönlendirildi; sürüm karşılaştırması sayısal yapıldı (`2.0.0 > 1.11.3`).
+
+#### 11.7 Yayın
+- [x] Depo `hasakguldev/futgol` olarak başlatıldı; 219 dosya (3,5 MB) commit + push edildi. Veri kümesi `.gitignore` ile dışarıda tutuldu.
+- [x] `v1.1.0` sürümü yayımlandı: release APK (51 MB), `difficulty_rules.json`, `player_leagues.csv`. `ds` sürümündeki veri kümesine dokunulmadı.
+- [x] README yeniden yazıldı: zorluk modeli, ölçüm yöntemi ve araçlar belgelendi.
